@@ -1,15 +1,27 @@
 package net.ddns.swooosh.campusliveserver.main;
 
+import javafx.beans.InvalidationListener;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import net.ddns.swooosh.campusliveserver.models.ClassAndResult;
+import net.ddns.swooosh.campusliveserver.models.Result;
+import net.ddns.swooosh.campusliveserver.models.Student;
+import net.ddns.swooosh.campusliveserver.models.StudentClass;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.*;
 
 public class DatabaseHandler {
 
     private Connection con;
 
-    public Boolean connect() {
+    public Boolean connectDB() {
         try {
             Boolean createDatabase = false;
             if (!Server.DATABASE_FILE.exists()) {
@@ -83,6 +95,73 @@ public class DatabaseHandler {
             return false;
         }
     }
+
+    public Boolean authoriseStudent(String username, String password) {
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student WHERE StudentNumber = ? AND Password = ?");
+            preparedStatement.setString(1, username);
+            preparedStatement.setString(2, password);
+            return preparedStatement.executeQuery().next();
+        } catch (SQLException ex) {
+            System.out.println("Server> authoriseStudenttudent> " + ex);
+        }
+        return false;
+    }
+
+    public Boolean authoriseLecturer(String username, String password) {//TODO
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student WHERE StudentNumber = ? AND Password = ?");
+            preparedStatement.setString(1, username);
+            preparedStatement.setString(2, password);
+            return preparedStatement.executeQuery().next();
+        } catch (SQLException ex) {
+            System.out.println("Server> authoriseStudent> " + ex);
+        }
+        return false;
+    }
+
+    public Boolean authoriseAdmin(String username, String password) {
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM StudentNumbert WHERE StudentNumber = ? AND Password = ?");
+            preparedStatement.setString(1, username);
+            preparedStatement.setString(2, password);
+            return preparedStatement.executeQuery().next();
+        } catch (SQLException ex) {
+            System.out.println("Server> authoriseStudent> " + ex);
+        }
+        return false;
+    }
+
+    public Student getStudent(String studentNumber) {
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student, Class, Result WHERE StudentNumber = ?");
+            preparedStatement.setString(1, studentNumber);
+            ResultSet rs = preparedStatement.executeQuery();
+
+            if (rs.next()) {
+
+                StudentClass studentClass = null;
+                ObservableList<Result> result = FXCollections.observableArrayList();
+                ObservableList<ClassAndResult> classAndResult = FXCollections.observableArrayList();
+
+
+                Student student = new Student(rs.getString("StudentNumber"), rs.getString("Campus"), rs.getString("Qualification"), rs.getString("FirstName"), rs.getString("LastName"), rs.getString("Email"), classAndResult);//TODO class and results
+                return student;
+            } else {
+                PreparedStatement preparedStatement2 = con.prepareStatement("SELECT * FROM Student WHERE StudentNumber = ?");
+                preparedStatement2.setString(1, studentNumber);
+                ResultSet rs2 = preparedStatement2.executeQuery();
+                if (rs2.next()) {
+                    Student student = new Student(rs.getString("StudentNumber"), rs.getString("Campus"), rs.getString("Qualification"), rs.getString("FirstName"), rs.getString("LastName"), rs.getString("Email"), null);
+                    return student;
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Server> getStudent> " + ex);
+        }
+        return null;
+    }
+
 
 
 }
