@@ -202,41 +202,41 @@ public class Server {
                         } else if (command.startsWith("")) {
 
                         }  else if (command.startsWith("addStu:")) {
-                            dh.addRegistered(command.split(":")[1], command.split(":")[2]);
+                            //dh.addRegistered(command.split(":")[1], command.split(":")[2]);
                             System.out.println("Server> Connection " + connectionNum + "> Registered a student in a class");
                         } else if (command.startsWith("addLec:")) {
-                            dh.addAdmin(command.split(":")[1], command.split(":")[2]);
+                            //dh.addAdmin(command.split(":")[1], command.split(":")[2]);
                             System.out.println("Server> Connection " + connectionNum + "> Added an admin");
                         } else if (command.startsWith("addAdmin:")) {
-                            dh.addAdmin(command.split(":")[1], command.split(":")[2]);
+                            //dh.addAdmin(command.split(":")[1], command.split(":")[2]);
                             System.out.println("Server> Connection " + connectionNum + "> Added an admin");
                         } else if (command.startsWith("addClass:")) {
-                            dh.addAdmin(command.split(":")[1], command.split(":")[2]);
+                            //dh.addAdmin(command.split(":")[1], command.split(":")[2]);
                             System.out.println("Server> Connection " + connectionNum + "> Added an admin");
                         } else if (command.startsWith("addNotice:")) {
-                            dh.addAdmin(command.split(":")[1], command.split(":")[2]);
+                            //dh.addAdmin(command.split(":")[1], command.split(":")[2]);
                             System.out.println("Server> Connection " + connectionNum + "> Added an admin");
                         } else if (command.startsWith("addResTem:")) {
-                            dh.addAdmin(command.split(":")[1], command.split(":")[2]);
+                            //dh.addAdmin(command.split(":")[1], command.split(":")[2]);
                             System.out.println("Server> Connection " + connectionNum + "> Added an admin");
                         } else if (command.startsWith("delStud:")) {
-                            dh.delStudent(command.split(":")[1]);
+                            //dh.delStudent(command.split(":")[1]);
                             System.out.println("Server> Connection " + connectionNum + "> Deleted a student");
                         } else if (command.startsWith("delLec:")) {
-                            dh.delLecturer(command.split(":")[1]);
+                            //dh.delLecturer(command.split(":")[1]);
                             System.out.println("Server> Connection " + connectionNum + "> Deleted a lecturer");
                         } else if (command.startsWith("delClass:")) {
-                            dh.delClass(command.split(":")[1]);
+                            //dh.delClass(command.split(":")[1]);
                             System.out.println("Server> Connection " + connectionNum + "> Deleted a class");
                         } else if (command.startsWith("delStu:")) {
-                            dh.delRegistered(command.split(":")[1], command.split(":")[2]);
+                            //dh.delRegistered(command.split(":")[1], command.split(":")[2]);
                             System.out.println("Server> Connection " + connectionNum + "> Removed a student from a class");
                         } else if (command.startsWith("delAdmin:")) {
-                            dh.delAdmin(command.split(":")[1]);
+                            //dh.delAdmin(command.split(":")[1]);
                             System.out.println("Server> Connection " + connectionNum + "> Deleted an admin");
                         } else if (command.startsWith("getAdminData")) {
-                            adminDataModel = dh.getAdminData();
-                            sendObject(adminDataModel);
+                            //adminDataModel = dh.getAdminData();
+                            //sendObject(adminDataModel);
                             System.out.println("Server> Connection " + connectionNum + "> Sent admin data");
                         }
                     } else {
