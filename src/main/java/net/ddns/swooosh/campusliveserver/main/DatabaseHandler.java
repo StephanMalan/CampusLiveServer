@@ -1,8 +1,6 @@
 package net.ddns.swooosh.campusliveserver.main;
 
-import javafx.beans.InvalidationListener;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import net.ddns.swooosh.campusliveserver.models.ClassAndResult;
 import net.ddns.swooosh.campusliveserver.models.Result;
@@ -15,7 +13,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.*;
 
 public class DatabaseHandler {
 
