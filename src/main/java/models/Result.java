@@ -1,4 +1,4 @@
-package net.ddns.swooosh.campusliveserver.models;
+package models;
 
 import java.io.Serializable;
 
@@ -7,13 +7,15 @@ public class Result implements Serializable {
     private String resultName;
     private Double result;
     private Double resultMax;
-    private Double resultsWeight;
+    private Double dpWeight;
+    private Double finalWeight;
 
-    public Result(String resultName, Double result, Double resultMax, Double resultsWeight) {
+    public Result(String resultName, Double result, Double resultMax, Double dpWeight, Double finalWeight) {
         this.resultName = resultName;
         this.result = result;
         this.resultMax = resultMax;
-        this.resultsWeight = resultsWeight;
+        this.dpWeight = dpWeight;
+        this.finalWeight = finalWeight;
     }
 
     public String getResultName() {
@@ -28,7 +30,11 @@ public class Result implements Serializable {
         return resultMax;
     }
 
-    public Double getResultsWeight() {
-        return resultsWeight;
+    public Double getDpWeight() {
+        return dpWeight;
+    }
+
+    public Double getFinalWeight() {
+        return finalWeight;
     }
 }

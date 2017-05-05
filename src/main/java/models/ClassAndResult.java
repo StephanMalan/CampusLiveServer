@@ -1,15 +1,14 @@
-package net.ddns.swooosh.campusliveserver.models;
-
-import javafx.collections.ObservableList;
+package models;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class ClassAndResult implements Serializable {
 
     private StudentClass studentClass;
-    private ObservableList<Result> results;
+    private List<Result> results;
 
-    public ClassAndResult(StudentClass studentClass, ObservableList<Result> results) {
+    public ClassAndResult(StudentClass studentClass, List<Result> results) {
         this.studentClass = studentClass;
         this.results = results;
     }
@@ -18,7 +17,11 @@ public class ClassAndResult implements Serializable {
         return studentClass;
     }
 
-    public ObservableList<Result> getResults() {
+    public List<Result> getResults() {
         return results;
+    }
+
+    public String toString() {
+        return studentClass.getModuleName();
     }
 }
