@@ -71,21 +71,27 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                 String input;
                 if ((input = getReply()) != null) {
                     if (input.startsWith("lo:")) {
+                        dh.log("Student " + studentNumber + "> Requested Lecturer Online");
                         if(isLecturerOnline(input.substring(3))){
                             outputQueue.add(0, "lo:y");
                         }else{
                             outputQueue.add(0, "lo:n");
                         }
                     } else if (input.startsWith("cp:")) {
+                        dh.log("Student " + studentNumber + "> Requested Change Password");
                         changePassword(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
                     } else if (input.startsWith("sm:")) {
+                        dh.log("Student " + studentNumber + "> Send Direct Message to Lecturer: " + input.substring(3).split(":")[1] + "> " + input.substring(3).split(":")[0]);
                         sendMessage(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
                     } else if (input.startsWith("fp:")) {
+                        dh.log("Student " + studentNumber + "> Requested Forgot Password");
                         forgotPassword(input.substring(3));
                     } else if (input.startsWith("gf:")) {
+                        dh.log("Student " + studentNumber + "> Requested File: " + input.substring(3).split(":")[1] + " From class: " + input.substring(3).split(":")[0]);
                         getFile(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
                     } else {
-                        System.out.println("Unknown command: " + input);
+                        dh.log("Student " + studentNumber + "> Requested Unknown Command: " + input);
+                        System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Unknown command: " + input);
                     }
                 }
             }
@@ -99,11 +105,14 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                     if (!outputQueue.isEmpty()) {
                         Object out = outputQueue.get(0);
                         sendData(out);
+                        dh.log("Student " + studentNumber + "> OutputProcessor> Sent: " + outputQueue.get(0));
+                        System.out.println("net.ddns.swooosh.campusliveserver.main.Server>OutputProcessor> Sent: " + outputQueue.get(0));
                         outputQueue.remove(out);
                     }
                     Thread.sleep(20);
                 } catch (Exception ex) {
-                    System.out.println("Server> OutputProcessor> " + ex);
+                    dh.log("Server> OutputProcessor> " + ex);
+                    ex.printStackTrace();
                 }
             }
         }
@@ -116,24 +125,25 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                 objectOutputStream.flush();
                 objectOutputStream.reset();
             }
-            System.out.println("Sent data: " + data);
         } catch (Exception ex) {
             terminateConnection();
-            System.out.println("Server> sendData> " + ex);
+            dh.log("Server> sendData> " + ex);
+            ex.printStackTrace();
         }
     }
 
     public String getReply() {
         try {
             String input;
-            System.out.println("Waiting for reply...");
+            System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Waiting for reply...");
             synchronized (objectInputStream) {
                 while ((input = objectInputStream.readUTF()) == null);
             }
             return  input;
         } catch (Exception ex) {
             terminateConnection();
-            System.out.println("Server> getReply> " + ex);
+            dh.log("Server> sendData> " + ex);
+            ex.printStackTrace();
         }
         return null;
     }
@@ -152,7 +162,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     private void changePassword(String prevPassword, String newPassword) {
         String sPassword = dh.getStudentPassword(studentNumber);
         if (prevPassword.matches(sPassword)) {
-            dh.changePasswordStudent(studentNumber, newPassword);
+            dh.changeStudentPassword(studentNumber, newPassword);
             outputQueue.add(0, "cp:y");
         }else{
             outputQueue.add(0, "cp:n");
@@ -172,7 +182,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     }
 
     private void forgotPassword(String email) {
-        if(dh.emailPassword(email)) {
+        if(dh.emailStudentPassword(email, studentNumber)) {
             outputQueue.add(0, "fp:y");
         }else{
             outputQueue.add(0, "fp:n");
@@ -188,10 +198,12 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                 System.out.println(Math.min(Server.BUFFER_SIZE, fileBytes.length - size));
                 outputQueue.add(new FilePart(Arrays.copyOfRange(fileBytes, size, size + Math.min(Server.BUFFER_SIZE, fileBytes.length - size)), Integer.parseInt(classID), fileName));
                 size +=  Math.min(Server.BUFFER_SIZE, fileBytes.length - size);
-                System.out.println("Total size: " + size);
+                dh.log("Student " + studentNumber + "> Successfully Downloaded File: " + fileName + " For Class: " + classID);
+                System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Successfully Downloaded File: " + fileName + " For Class: " + classID);
             }
         } catch (Exception ex) {
-            System.out.println("Server> getFile> " + ex);
+            dh.log("Server> getFile> " + ex);
+            ex.printStackTrace();;
         }
     }
 
@@ -200,7 +212,11 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     }
 
     private void updateNoticeBoard() {
-        noticeBoards.addAll(dh.getNoticeBoards());
+        noticeBoards.addAll(dh.getNoticeBoards(studentNumber));
+    }
+
+    public String getStudentNumber(){
+        return studentNumber;
     }
 
     private void terminateConnection() {
@@ -209,7 +225,8 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
             socket.close();
             connectionsList.remove(this);
         } catch (Exception ex) {
-            System.out.println("Server> terminateConnection> " + ex);
+            dh.log("Server> terminateConnection> " + ex);
+            ex.printStackTrace();
         }
     }
 

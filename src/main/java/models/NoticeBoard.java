@@ -6,6 +6,7 @@ public class NoticeBoard implements Serializable{
 
     private String heading;
     private String description;
+    private String tag;
 
     public NoticeBoard(String heading, String description) {
         this.heading = heading;
@@ -18,5 +19,9 @@ public class NoticeBoard implements Serializable{
 
     public String getDescription() {
         return description;
+    }
+
+    public String getTag() {
+        return tag;
     }
 }
