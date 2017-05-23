@@ -7,10 +7,13 @@ public class NoticeBoard implements Serializable{
     private String heading;
     private String description;
     private String tag;
+    private String expiryDate;
 
-    public NoticeBoard(String heading, String description) {
+    public NoticeBoard(String heading, String description, String tag, String expiryDate) {
         this.heading = heading;
         this.description = description;
+        this.tag = tag;
+        this.expiryDate = expiryDate;
     }
 
     public String getHeading() {
@@ -23,5 +26,9 @@ public class NoticeBoard implements Serializable{
 
     public String getTag() {
         return tag;
+    }
+
+    public String getExpiryDate(){
+        return expiryDate;
     }
 }

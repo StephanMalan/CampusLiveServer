@@ -106,7 +106,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                         Object out = outputQueue.get(0);
                         sendData(out);
                         dh.log("Student " + studentNumber + "> OutputProcessor> Sent: " + outputQueue.get(0));
-                        System.out.println("net.ddns.swooosh.campusliveserver.main.Server>OutputProcessor> Sent: " + outputQueue.get(0));
+                        System.out.println("net.ddns.swooosh.campusliveserver.main.Server> OutputProcessor> Sent: " + outputQueue.get(0));
                         outputQueue.remove(out);
                     }
                     Thread.sleep(20);

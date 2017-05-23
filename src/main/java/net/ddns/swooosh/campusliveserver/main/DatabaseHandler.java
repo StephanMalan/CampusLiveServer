@@ -301,7 +301,7 @@ public class DatabaseHandler {
             ResultSet rs = preparedStatement.executeQuery();
             ObservableList<NoticeBoard> notices = FXCollections.observableArrayList();
             while (rs.next()) {
-                NoticeBoard newNotice = new NoticeBoard(rs.getString("Heading"), rs.getString("Description"));
+                NoticeBoard newNotice = new NoticeBoard(rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag"), rs.getString("ExpiryDate"));
                 notices.add(newNotice);
             }
             log("Server> Successfully Gotten Notices For Student/Lecturer: " + number);
@@ -502,14 +502,14 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean addClassTime(String classID, String roomNumber, String dayOfWeek, String startSlot, String endSlot){
+    public Boolean addClassTime(int classID, String roomNumber, int dayOfWeek, int startSlot, int endSlot){
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO ClassTime (ClassID, RoomNumber, DayOfWeek, StartSlot, EndSlot) VALUES (?,?,?,?,?);");
-            preparedStatement.setString(1, classID);
+            preparedStatement.setInt(1, classID);
             preparedStatement.setString(2, roomNumber);
-            preparedStatement.setString(3, dayOfWeek);
-            preparedStatement.setString(4, startSlot);
-            preparedStatement.setString(5, endSlot);
+            preparedStatement.setInt(3, dayOfWeek);
+            preparedStatement.setInt(4, startSlot);
+            preparedStatement.setInt(5, endSlot);
             log("Admin> Successfully Added ClassTime For ClassID: " + classID);
             return preparedStatement.execute();
         } catch (SQLException ex) {
@@ -519,13 +519,13 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean addResultTemplate(String classID, String resultMax, String dpWeight, String finalWeight, String resultName){
+    public Boolean addResultTemplate(int classID, int resultMax, int dpWeight, int finalWeight, String resultName){
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO ResultTemplate (ClassID, ResultMax, DPWeight, FinalWeight, ResultName) VALUES (?,?,?,?,?);");
-            preparedStatement.setString(1, classID);
-            preparedStatement.setString(2, resultMax);
-            preparedStatement.setString(3, dpWeight);
-            preparedStatement.setString(4, finalWeight);
+            preparedStatement.setInt(1, classID);
+            preparedStatement.setInt(2, resultMax);
+            preparedStatement.setInt(3, dpWeight);
+            preparedStatement.setInt(4, finalWeight);
             preparedStatement.setString(5, resultName);
             log("Admin> Successfully Added ResultTemplate: " + resultName + " For ClassID: " + classID);
             return preparedStatement.execute();
@@ -536,12 +536,12 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean addResult(String resultTemplateID, String studentNumber, String result){
+    public Boolean addResult(int resultTemplateID, String studentNumber, int result){
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Result (ResultTemplateID, StudentNumber, Result) VALUES (?,?,?);");
-            preparedStatement.setString(1, resultTemplateID);
+            preparedStatement.setInt(1, resultTemplateID);
             preparedStatement.setString(2, studentNumber);
-            preparedStatement.setString(3, result);
+            preparedStatement.setInt(3, result);
             log("Admin> Successfully Added Result For Student: " + studentNumber + " For ResultTemplate: " + resultTemplateID);
             return preparedStatement.execute();
         } catch (SQLException ex) {
@@ -567,11 +567,11 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean registerStudentForClass(String studentNumber, String classID){
+    public Boolean registerStudentForClass(String studentNumber, int classID){
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Registered (StudentNumber, ClassID) VALUES (?,?,);");
             preparedStatement.setString(1, studentNumber);
-            preparedStatement.setString(2, classID);
+            preparedStatement.setInt(2, classID);
             log("Admin> Successfully Registered Student: " + studentNumber + " For Class: " + classID);
             return preparedStatement.execute();
         } catch (SQLException ex) {
@@ -581,10 +581,10 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean addAttendance(String classID, String studentNumber, String aDate, String attendance){
+    public Boolean addAttendance(int classID, String studentNumber, String aDate, String attendance){
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Attendance (ClassID, StudentNumber, ADate, Attendance) VALUES (?,?,?,?);");
-            preparedStatement.setString(1, classID);
+            preparedStatement.setInt(1, classID);
             preparedStatement.setString(2, studentNumber);
             preparedStatement.setString(3, aDate);
             preparedStatement.setString(4, attendance);
@@ -638,14 +638,14 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateClass(String newClassID, String moduleName, String moduleNumber, String lecturerNumber, String oldClassID){
+    public Boolean updateClass(int newClassID, String moduleName, String moduleNumber, String lecturerNumber, int oldClassID){
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Class SET ClassID = ? AND ModuleName = ? AND ModuleNumber = ? AND LecturerNumber = ? WHERE ClassID = ?;");
-            preparedStatement.setString(1, newClassID);
+            preparedStatement.setInt(1, newClassID);
             preparedStatement.setString(2, moduleName);
             preparedStatement.setString(3, moduleNumber);
             preparedStatement.setString(4, lecturerNumber);
-            preparedStatement.setString(5, oldClassID);
+            preparedStatement.setInt(5, oldClassID);
             log("Admin> Successfully Updated Class: " + oldClassID);
             return preparedStatement.executeQuery().next();
         } catch (SQLException ex) {
@@ -655,16 +655,16 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateClassTime(String newClassTimeID, String classID, String roomNumber, String dayOfWeek, String startSlot, String endSlot, String oldClassTimeID){
+    public Boolean updateClassTime(int newClassTimeID, int classID, String roomNumber, int dayOfWeek, int startSlot, int endSlot, int oldClassTimeID){
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE ClassTime SET ClassTimeID = ? AND ClassID = ? AND RommNumber = ? AND DayOfWeek = ? AND StartSlot = ? AND EndSlot = ? WHERE ClassTime = ?;");
-            preparedStatement.setString(1, newClassTimeID);
-            preparedStatement.setString(2, classID);
+            preparedStatement.setInt(1, newClassTimeID);
+            preparedStatement.setInt(2, classID);
             preparedStatement.setString(3, roomNumber);
-            preparedStatement.setString(4, dayOfWeek);
-            preparedStatement.setString(5, startSlot);
-            preparedStatement.setString(6, endSlot);
-            preparedStatement.setString(7, oldClassTimeID);
+            preparedStatement.setInt(4, dayOfWeek);
+            preparedStatement.setInt(5, startSlot);
+            preparedStatement.setInt(6, endSlot);
+            preparedStatement.setInt(7, oldClassTimeID);
             log("Admin> Successfully Updated ClassTime: " + oldClassTimeID);
             return preparedStatement.executeQuery().next();
         } catch (SQLException ex) {
@@ -674,16 +674,16 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateResultTemplate(String newResultTemplateID, String classID, String resultMax, String dpWeight, String finalWeight, String resultName, String oldResultTemplateID){
+    public Boolean updateResultTemplate(int newResultTemplateID, int classID, int resultMax, int dpWeight, int finalWeight, String resultName, int oldResultTemplateID){
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE ResultTemplate SET ResultTemplateID = ? AND ClassID = ? AND ResultMax = ? AND DPWeight = ? AND FinalWeight = ? AND ResultName = ? WHERE ResultTemplateID = ?;");
-            preparedStatement.setString(1, newResultTemplateID);
-            preparedStatement.setString(2, classID);
-            preparedStatement.setString(3, resultMax);
-            preparedStatement.setString(4, dpWeight);
-            preparedStatement.setString(5, finalWeight);
+            preparedStatement.setInt(1, newResultTemplateID);
+            preparedStatement.setInt(2, classID);
+            preparedStatement.setInt(3, resultMax);
+            preparedStatement.setInt(4, dpWeight);
+            preparedStatement.setInt(5, finalWeight);
             preparedStatement.setString(6, resultName);
-            preparedStatement.setString(7, oldResultTemplateID);
+            preparedStatement.setInt(7, oldResultTemplateID);
             log("Admin> Successfully Updated ResultTemplate: " + oldResultTemplateID);
             return preparedStatement.executeQuery().next();
         } catch (SQLException ex) {
@@ -693,14 +693,14 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateResult(String newResultID, String resultTemplateID, String studentNumber, String result, String oldResultID){
+    public Boolean updateResult(int newResultID, int resultTemplateID, String studentNumber, int result, int oldResultID){
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Result SET ResultID = ? AND ResultTemplateID = ? AND StudentNumber = ? AND Result = ? WHERE ResultID = ?;");
-            preparedStatement.setString(1, newResultID);
-            preparedStatement.setString(2, resultTemplateID);
+            preparedStatement.setInt(1, newResultID);
+            preparedStatement.setInt(2, resultTemplateID);
             preparedStatement.setString(3, studentNumber);
-            preparedStatement.setString(4, result);
-            preparedStatement.setString(5, oldResultID);
+            preparedStatement.setInt(4, result);
+            preparedStatement.setInt(5, oldResultID);
             log("Admin> Successfully Updated Result: " + oldResultID);
             return preparedStatement.executeQuery().next();
         } catch (SQLException ex) {
@@ -710,15 +710,15 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateNotice(String newNoticeBoardID, String heading, String description, String expiryDate, String tag, String oldNoticeBoardID){
+    public Boolean updateNotice(int newNoticeBoardID, String heading, String description, String expiryDate, String tag, int oldNoticeBoardID){
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE NoticeBoard SET NoticeBoardID = ? AND Heading = ? AND Description = ? AND ExpiryDate = ? AND Tag = ? WHERE NoticeBoardID = ?;");
-            preparedStatement.setString(1, newNoticeBoardID);
+            preparedStatement.setInt(1, newNoticeBoardID);
             preparedStatement.setString(2, heading);
             preparedStatement.setString(3, description);
             preparedStatement.setString(4, expiryDate);
             preparedStatement.setString(5, tag);
-            preparedStatement.setString(6, oldNoticeBoardID);
+            preparedStatement.setInt(6, oldNoticeBoardID);
             log("Admin> Successfully Updated NoticeBoard: " + oldNoticeBoardID);
             return preparedStatement.executeQuery().next();
         } catch (SQLException ex) {
@@ -728,15 +728,15 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateAttendance(String newAttendanceID, String classID, String studentNumber, String aDate, String attendance, String oldAttendanceID){
+    public Boolean updateAttendance(int newAttendanceID, int classID, String studentNumber, String aDate, String attendance, int oldAttendanceID){
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Attendance SET AttendanceID = ? AND ClassID = ? AND StudentNumber = ? AND ADate = ? AND Attendance = ? WHERE AttendanceID = ?;");
-            preparedStatement.setString(1, newAttendanceID);
-            preparedStatement.setString(2, classID);
+            preparedStatement.setInt(1, newAttendanceID);
+            preparedStatement.setInt(2, classID);
             preparedStatement.setString(3, studentNumber);
             preparedStatement.setString(4, aDate);
             preparedStatement.setString(5, attendance);
-            preparedStatement.setString(6, oldAttendanceID);
+            preparedStatement.setInt(6, oldAttendanceID);
             log("Admin> Successfully Updated Attendance: " + oldAttendanceID);
             return preparedStatement.executeQuery().next();
         } catch (SQLException ex) {
@@ -746,11 +746,11 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean removeStudentFromClass(String studentNumber, String classID){
+    public Boolean removeStudentFromClass(String studentNumber, int classID){
         try {
             PreparedStatement preparedStatement = con.prepareStatement("DELETE FROM Registered WHERE StudentNumber = ? AND ClassID = ?;");
             preparedStatement.setString(1, studentNumber);
-            preparedStatement.setString(2, classID);
+            preparedStatement.setInt(2, classID);
             log("Admin> Successfully Removed Student: " + studentNumber + " From Class: " + classID);
             return preparedStatement.executeQuery().next();
         } catch (SQLException ex) {
