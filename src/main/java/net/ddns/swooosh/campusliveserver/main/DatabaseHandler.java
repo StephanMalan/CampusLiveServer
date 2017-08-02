@@ -295,13 +295,13 @@ public class DatabaseHandler {
         }
     }
 
-    public ObservableList<NoticeBoard> getNoticeBoards(String number) {
+    public ObservableList<Notice> getNoticeBoards(String number) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * From NoticeBoard;");
             ResultSet rs = preparedStatement.executeQuery();
-            ObservableList<NoticeBoard> notices = FXCollections.observableArrayList();
+            ObservableList<Notice> notices = FXCollections.observableArrayList();
             while (rs.next()) {
-                NoticeBoard newNotice = new NoticeBoard(rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag"), rs.getString("ExpiryDate"));
+                Notice newNotice = new Notice(rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag"), rs.getString("ExpiryDate"));
                 notices.add(newNotice);
             }
             log("Server> Successfully Gotten Notices For Student/Lecturer: " + number);
@@ -719,7 +719,7 @@ public class DatabaseHandler {
             preparedStatement.setString(4, expiryDate);
             preparedStatement.setString(5, tag);
             preparedStatement.setInt(6, oldNoticeBoardID);
-            log("Admin> Successfully Updated NoticeBoard: " + oldNoticeBoardID);
+            log("Admin> Successfully Updated Notice: " + oldNoticeBoardID);
             return preparedStatement.executeQuery().next();
         } catch (SQLException ex) {
             ex.printStackTrace();

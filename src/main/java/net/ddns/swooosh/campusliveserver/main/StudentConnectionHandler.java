@@ -23,7 +23,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     private String studentNumber;
     private ObjectProperty<Student> student = new SimpleObjectProperty<>();
     private ObservableList<ConnectionHandler> connectionsList;
-    private ObservableList<NoticeBoard> noticeBoards = FXCollections.observableArrayList();
+    private ObservableList<Notice> notices = FXCollections.observableArrayList();
     public volatile ObservableList<Object> outputQueue = FXCollections.observableArrayList();
     public volatile BooleanProperty updateStudent = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateNoticeBoard = new SimpleBooleanProperty(false);
@@ -54,9 +54,9 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         student.addListener(e -> {
             outputQueue.add(0, student.get());
         });
-        noticeBoards.addListener((InvalidationListener) e -> {
-            if (!noticeBoards.isEmpty()) {
-                outputQueue.add(0, Arrays.asList(noticeBoards.toArray()));
+        notices.addListener((InvalidationListener) e -> {
+            if (!notices.isEmpty()) {
+                outputQueue.add(0, Arrays.asList(notices.toArray()));
             }
         });
         updateStudent();
@@ -212,7 +212,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     }
 
     private void updateNoticeBoard() {
-        noticeBoards.addAll(dh.getNoticeBoards(studentNumber));
+        notices.addAll(dh.getNoticeBoards(studentNumber));
     }
 
     public String getStudentNumber(){

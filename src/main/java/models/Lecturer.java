@@ -5,15 +5,15 @@ import java.util.List;
 
 public class Lecturer implements Serializable{
 
-    private String lecturerNumber;
+    private String lecturerID;
     private String campus;
     private String firstName;
     private String lastName;
     private String email;
     private List<LecturerClass> classes;
 
-    public Lecturer(String lecturerNumber, String campus, String firstName, String lastName, String email, List<LecturerClass> classes) {
-        this.lecturerNumber = lecturerNumber;
+    public Lecturer(String lecturerID, String campus, String firstName, String lastName, String email, List<LecturerClass> classes) {
+        this.lecturerID = lecturerID;
         this.campus = campus;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -21,8 +21,8 @@ public class Lecturer implements Serializable{
         this.classes = classes;
     }
 
-    public String getLecturerNumber() {
-        return lecturerNumber;
+    public String getLecturerID() {
+        return lecturerID;
     }
 
     public String getCampus() {

@@ -8,7 +8,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import models.FilePart;
-import models.NoticeBoard;
+import models.Notice;
 import models.Lecturer;
 import java.io.File;
 import java.io.ObjectInputStream;
@@ -26,7 +26,7 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     private String lecturerNumber;
     private ObjectProperty<Lecturer> lecturer = new SimpleObjectProperty<>();
     private ObservableList<ConnectionHandler> connectionsList;
-    private ObservableList<NoticeBoard> noticeBoards = FXCollections.observableArrayList();
+    private ObservableList<Notice> notices = FXCollections.observableArrayList();
     public volatile ObservableList<Object> outputQueue = FXCollections.observableArrayList();
     public volatile BooleanProperty updateLecturer = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateNoticeBoard = new SimpleBooleanProperty(false);
@@ -57,9 +57,9 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
         lecturer.addListener(e -> {
             outputQueue.add(0, lecturer.get());
         });
-        noticeBoards.addListener((InvalidationListener) e -> {
-            if (!noticeBoards.isEmpty()) {
-                outputQueue.add(0, Arrays.asList(noticeBoards.toArray()));
+        notices.addListener((InvalidationListener) e -> {
+            if (!notices.isEmpty()) {
+                outputQueue.add(0, Arrays.asList(notices.toArray()));
             }
         });
         updateLecturer();
@@ -203,7 +203,7 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     }
 
     private void updateNoticeBoard() {
-        noticeBoards.addAll(dh.getNoticeBoards(lecturerNumber));
+        notices.addAll(dh.getNoticeBoards(lecturerNumber));
     }
 
     private void terminateConnection() {
