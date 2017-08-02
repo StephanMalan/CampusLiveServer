@@ -14,7 +14,7 @@ public class Student implements Serializable {
     private List<ClassAndResult> classAndResults;
     private String contactNumber;
 
-    public Student(String studentNumber, String campus, String qualification, String firstName, String lastName, String email, List<ClassAndResult> classAndResults, String contactNumber) {
+    public Student(String studentNumber, String campus, String qualification, String firstName, String lastName, String email,  String contactNumber, List<ClassAndResult> classAndResults) {
         this.studentNumber = studentNumber;
         this.campus = campus;
         this.qualification = qualification;

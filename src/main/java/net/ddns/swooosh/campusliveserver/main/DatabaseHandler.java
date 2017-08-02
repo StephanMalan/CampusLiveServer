@@ -70,9 +70,9 @@ public class DatabaseHandler {
                         "ClassID integer PRIMARY KEY AUTOINCREMENT, " +
                         "ModuleName text, " +
                         "ModuleNumber text, " +
-                        "LecturerNumber text);");
+                        "LecturerID text);");
                 stmt.execute("CREATE TABLE Lecturer (" +
-                        "LecturerNumber text PRIMARY KEY, " +
+                        "LecturerID text PRIMARY KEY, " +
                         "Campus text, " +
                         "FirstName text, " +
                         "LastName text, " +
@@ -91,12 +91,28 @@ public class DatabaseHandler {
                         "DPWeight integer, " +
                         "FinalWeight integer, " +
                         "ResultName text);");
-                stmt.execute("CREATE TABLE NoticeBoard (" +
-                        "NoticeBoardID integer PRIMARY KEY AUTOINCREMENT, " +
+                stmt.execute("CREATE TABLE Notice (" +
+                        "NoticeID integer PRIMARY KEY AUTOINCREMENT, " +
                         "Heading text, " +
                         "Description text, " +
                         "ExpiryDate text, " +
                         "Tag text);");
+                stmt.execute("CREATE TABLE Notification (" +
+                        "NotificationID integer PRIMARY KEY AUTOINCREMENT, " +
+                        "Heading text, " +
+                        "Description text, " +
+                        "Tag text);");
+                stmt.execute("CREATE TABLE ContactDetails (" +
+                        "ContactDetailsID integer PRIMARY KEY AUTOINCREMENT, " +
+                        "Name text, " +
+                        "Postition text, " +
+                        "Department text, " +
+                        "ContactNumber text, " +
+                        "Email text);");
+                stmt.execute("CREATE TABLE ImportantDate (" +
+                        "ImportantDateID integer PRIMARY KEY AUTOINCREMENT, " +
+                        "IDate text, " +
+                        "Description text);");
                 stmt.execute("CREATE TABLE Admin (" +
                         "Username text, " +
                         "Password text);");
