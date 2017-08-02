@@ -21,6 +21,8 @@ public class Server {
     private ObservableList<ConnectionHandler> connectionsList = FXCollections.observableArrayList();
     public static final int PORT = 25760;
     public static final int MAX_CONNECTIONS = 500;
+    public static final String DROPBOX_LOGIN = "username";
+    public static final String DROPBOX_PASSWORD = "password";
     public DatabaseHandler dh = new DatabaseHandler();
 
     public Server() {
@@ -95,7 +97,24 @@ public class Server {
                             objectOutputStream.writeObject("sa:n");
                             objectOutputStream.flush();
                         }
-                    } else if(input.startsWith("la:")) {
+                    } else if (input.startsWith("sao:")) {
+                        dh.log("Server> Authorising Student Off-Campus: " + input.substring(3).split(":")[0]);
+                        if (authoriseStudent(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
+                            dh.log("Server> Authorisied Student Off-Campus: " + input.substring(3).split(":")[0]);
+                            objectOutputStream.writeObject("sao:y");
+                            objectOutputStream.flush();
+                            
+                            /*StudentConnectionHandler studentConnectionHandler = new StudentConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(3).split(":")[0], connectionsList);
+                            Thread t = new Thread(studentConnectionHandler);
+                            t.start();*
+                            connectionsList.add(studentConnectionHandler);*/
+                            break StopClass;
+                        } else {
+                            dh.log("Server> Authorising Student : " + input.substring(3).split(":")[0] + " Failed");
+                            objectOutputStream.writeObject("sao:n");
+                            objectOutputStream.flush();
+                        }
+                    }else if(input.startsWith("la:")) {
                         dh.log("Server> Authorising Lecturer : " + input.substring(3).split(":")[0]);
                         if (authoriseLecturer(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
                             dh.log("Server> Authorised Lecturer : " + input.substring(3).split(":")[0]);

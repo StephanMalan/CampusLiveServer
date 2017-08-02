@@ -58,6 +58,8 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                 if ((input = getReply()) != null) {
                     if (input.startsWith(":")) {
 
+                    } else if (input.startsWith("lgt:")) {
+                        terminateConnection();
                     } else {
                         dh.log("Admin " + username + "> Requested Unknown Command: " + input);
                         System.out.println("Unknown command: " + input);

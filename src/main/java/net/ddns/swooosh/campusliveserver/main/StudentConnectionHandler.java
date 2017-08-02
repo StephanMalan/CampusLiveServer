@@ -21,12 +21,19 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     private ObjectInputStream objectInputStream;
     private ObjectOutputStream objectOutputStream;
     private String studentNumber;
+    private String qualification;
     private ObjectProperty<Student> student = new SimpleObjectProperty<>();
     private ObservableList<ConnectionHandler> connectionsList;
     private ObservableList<Notice> notices = FXCollections.observableArrayList();
+    private ObservableList<Notification> notifications = FXCollections.observableArrayList();
+    private ObservableList<ContactDetails> contactDetails = FXCollections.observableArrayList();
+    private ObservableList<ImportantDate> importantDates = FXCollections.observableArrayList();
     public volatile ObservableList<Object> outputQueue = FXCollections.observableArrayList();
     public volatile BooleanProperty updateStudent = new SimpleBooleanProperty(false);
-    public volatile BooleanProperty updateNoticeBoard = new SimpleBooleanProperty(false);
+    public volatile BooleanProperty updateNotices = new SimpleBooleanProperty(false);
+    public volatile BooleanProperty updateNotifications = new SimpleBooleanProperty(false);
+    public volatile BooleanProperty updateContactDetails = new SimpleBooleanProperty(false);
+    public volatile BooleanProperty updateImportantDates = new SimpleBooleanProperty(false);
     public volatile BooleanProperty running = new SimpleBooleanProperty(true);
     private DatabaseHandler dh = new DatabaseHandler();
 
@@ -36,6 +43,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         this.objectOutputStream = objectOutputStream;
         this.studentNumber = studentNumber;
         this.connectionsList = connectionsList;
+        this.qualification = dh.getStudentQualification(studentNumber);
     }
 
     public void run() {
@@ -45,9 +53,27 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                 updateStudent.set(false);
             }
         });
-        updateNoticeBoard.addListener((obs, oldV, newV) -> {
+        updateNotices.addListener((obs, oldV, newV) -> {
             if (newV) {
-                updateNoticeBoard();
+                updateNotices();
+                updateStudent.set(false);
+            }
+        });
+        updateNotifications.addListener((obs, oldV, newV) -> {
+            if (newV) {
+                updateNotifications();
+                updateStudent.set(false);
+            }
+        });
+        updateContactDetails.addListener((obs, oldV, newV) -> {
+            if (newV) {
+                updateContactDetails();
+                updateStudent.set(false);
+            }
+        });
+        updateImportantDates.addListener((obs, oldV, newV) -> {
+            if (newV) {
+                updateImportantDates();
                 updateStudent.set(false);
             }
         });
@@ -60,7 +86,10 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
             }
         });
         updateStudent();
-        updateNoticeBoard();
+        updateNotices();
+        updateNotifications();
+        updateContactDetails();
+        updateImportantDates();
         new InputProcessor().start();
         new OutputProcessor().start();
     }
@@ -89,6 +118,8 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                     } else if (input.startsWith("gf:")) {
                         dh.log("Student " + studentNumber + "> Requested File: " + input.substring(3).split(":")[1] + " From class: " + input.substring(3).split(":")[0]);
                         getFile(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
+                    } else if (input.startsWith("lgt:")) {
+                        terminateConnection();
                     } else {
                         dh.log("Student " + studentNumber + "> Requested Unknown Command: " + input);
                         System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Unknown command: " + input);
@@ -151,7 +182,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     private boolean isLecturerOnline(String lecturerNumber) {
         for (ConnectionHandler ch: connectionsList) {
             if(ch instanceof LecturerConnectionHandler){
-                if(((LecturerConnectionHandler) ch).getLecturerNumber().matches(lecturerNumber)){
+                if(((LecturerConnectionHandler) ch).getLecturerID().matches(lecturerNumber)){
                     return true;
                 }
             }
@@ -173,7 +204,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         if(isLecturerOnline(lecturerNumber)){
             for (ConnectionHandler ch: connectionsList) {
                 if(ch instanceof LecturerConnectionHandler){
-                    if(((LecturerConnectionHandler) ch).getLecturerNumber().matches(lecturerNumber)){
+                    if(((LecturerConnectionHandler) ch).getLecturerID().matches(lecturerNumber)){
                         ((LecturerConnectionHandler) ch).addMessage(message, studentNumber);
                     }
                 }
@@ -211,8 +242,20 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         student.setValue(dh.getStudent(studentNumber));
     }
 
-    private void updateNoticeBoard() {
-        notices.addAll(dh.getNoticeBoards(studentNumber));
+    private void updateNotices() {
+        notices.addAll(dh.getNotices(studentNumber, qualification));
+    }
+
+    private void updateNotifications() {
+        notifications.addAll(dh.getNotifications(studentNumber, qualification));
+    }
+
+    private void updateContactDetails() {
+        contactDetails.addAll(dh.getContactDetails(studentNumber));
+    }
+
+    private void updateImportantDates() {
+        importantDates.addAll(dh.getImportantDates(studentNumber));
     }
 
     public String getStudentNumber(){
