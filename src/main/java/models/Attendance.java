@@ -5,16 +5,16 @@ import java.util.Date;
 
 public class Attendance implements Serializable {
 
-    private Date date;
+    private String aDate;
     private String attendance;
 
-    public Attendance(Date date, String attendance) {
-        this.date = date;
+    public Attendance(String aDate, String attendance) {
+        this.aDate = aDate;
         this.attendance = attendance;
     }
 
-    public Date getDate() {
-        return date;
+    public String getDate() {
+        return aDate;
     }
 
     public String getAttendance() {

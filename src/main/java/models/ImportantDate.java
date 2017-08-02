@@ -5,15 +5,15 @@ import java.util.Date;
 
 public class ImportantDate implements Serializable {
 
-    private Date date;
+    private String date;
     private String description;
 
-    public ImportantDate(Date date, String description) {
+    public ImportantDate(String date, String description) {
         this.date = date;
         this.description = description;
     }
 
-    public Date getDate() {
+    public String getDate() {
         return date;
     }
 

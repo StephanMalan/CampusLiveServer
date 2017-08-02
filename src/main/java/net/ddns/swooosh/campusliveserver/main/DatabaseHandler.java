@@ -46,6 +46,7 @@ public class DatabaseHandler {
                         "FirstName text, " +
                         "LastName text, " +
                         "Password text, " +
+                        "AssignedPassword boolean, " +
                         "Email text, " +
                         "ContactNumber text);");
                 stmt.execute("CREATE TABLE Registered (" +
