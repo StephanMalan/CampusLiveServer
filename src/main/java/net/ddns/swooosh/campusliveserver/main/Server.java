@@ -103,7 +103,9 @@ public class Server {
                             dh.log("Server> Authorisied Student Off-Campus: " + input.substring(3).split(":")[0]);
                             objectOutputStream.writeObject("sao:y");
                             objectOutputStream.flush();
-                            
+
+                            //DropBox Details
+
                             /*StudentConnectionHandler studentConnectionHandler = new StudentConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(3).split(":")[0], connectionsList);
                             Thread t = new Thread(studentConnectionHandler);
                             t.start();*
