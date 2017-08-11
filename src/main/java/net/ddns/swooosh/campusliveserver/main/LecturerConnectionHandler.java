@@ -225,7 +225,7 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     }
 
     private void updateLecturer() {
-        lecturer.setValue(dh.getLecturer(lecturerID));
+        //lecturer.setValue(dh.getLecturer(lecturerID));
     }
 
     private void updateNotices() {

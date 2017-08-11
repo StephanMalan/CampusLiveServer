@@ -5,24 +5,24 @@ import java.util.List;
 
 public class StudentClass implements Serializable {
 
+    private int classID;
     private String moduleName;
     private String moduleNumber;
-    private String lecturerFirstName;
-    private String lecturerLastName;
-    private String lecturerNumber;
-    private String lecturerEmail;
+    private Lecturer lecturer;
     private List<ClassTime> classTimes;
     private List<ClassFile> files;
 
-    public StudentClass(String moduleName, String moduleNumber, String lecturerFirstName, String lecturerLastName, String lecturerNumber, String lecturerEmail, List<ClassTime> classTimes, List<ClassFile> files) {
+    public StudentClass(int classID, String moduleName, String moduleNumber, Lecturer lecturer, List<ClassTime> classTimes, List<ClassFile> files) {
+        this.classID = classID;
         this.moduleName = moduleName;
         this.moduleNumber = moduleNumber;
-        this.lecturerFirstName = lecturerFirstName;
-        this.lecturerLastName = lecturerLastName;
-        this.lecturerNumber = lecturerNumber;
-        this.lecturerEmail = lecturerEmail;
+        this.lecturer = lecturer;
         this.classTimes = classTimes;
         this.files = files;
+    }
+
+    public int getClassID() {
+        return classID;
     }
 
     public String getModuleName() {
@@ -33,20 +33,8 @@ public class StudentClass implements Serializable {
         return moduleNumber;
     }
 
-    public String getLecturerFirstName() {
-        return lecturerFirstName;
-    }
-
-    public String getLecturerLastName() {
-        return lecturerLastName;
-    }
-
-    public String getLecturerNumber() {
-        return lecturerNumber;
-    }
-
-    public String getLecturerEmail() {
-        return lecturerEmail;
+    public Lecturer getLecturer() {
+        return lecturer;
     }
 
     public List<ClassTime> getClassTimes() {

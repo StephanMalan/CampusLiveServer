@@ -8,11 +8,13 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import models.*;
+
 import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class StudentConnectionHandler extends ConnectionHandler implements Runnable {
@@ -81,9 +83,16 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
             outputQueue.add(0, student.get());
         });
         notices.addListener((InvalidationListener) e -> {
-            if (!notices.isEmpty()) {
-                outputQueue.add(0, Arrays.asList(notices.toArray()));
-            }
+            outputQueue.add(0, Arrays.asList(notices.toArray()));
+        });
+        notifications.addListener((InvalidationListener) e -> {
+            outputQueue.add(0, Arrays.asList(notifications.toArray()));
+        });
+        contactDetails.addListener((InvalidationListener) e -> {
+            outputQueue.add(0, Arrays.asList(contactDetails.toArray()));
+        });
+        importantDates.addListener((InvalidationListener) e -> {
+            outputQueue.add(0, Arrays.asList(importantDates.toArray()));
         });
         updateStudent();
         updateNotices();
@@ -101,9 +110,9 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                 if ((input = getReply()) != null) {
                     if (input.startsWith("lo:")) {
                         dh.log("Student " + studentNumber + "> Requested Lecturer Online");
-                        if(isLecturerOnline(input.substring(3))){
+                        if (isLecturerOnline(input.substring(3))) {
                             outputQueue.add(0, "lo:y");
-                        }else{
+                        } else {
                             outputQueue.add(0, "lo:n");
                         }
                     } else if (input.startsWith("cp:")) {
@@ -120,9 +129,11 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                         getFile(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
                     } else if (input.startsWith("lgt:")) {
                         terminateConnection();
+                    } else if (input.startsWith("dn:")) {
+
                     } else {
                         dh.log("Student " + studentNumber + "> Requested Unknown Command: " + input);
-                        System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Unknown command: " + input);
+                        System.out.println("Server> Unknown command: " + input);
                     }
                 }
             }
@@ -137,7 +148,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                         Object out = outputQueue.get(0);
                         sendData(out);
                         dh.log("Student " + studentNumber + "> OutputProcessor> Sent: " + outputQueue.get(0));
-                        System.out.println("net.ddns.swooosh.campusliveserver.main.Server> OutputProcessor> Sent: " + outputQueue.get(0));
+                        System.out.println("Server> OutputProcessor> Sent: " + out);
                         outputQueue.remove(out);
                     }
                     Thread.sleep(20);
@@ -166,11 +177,11 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     public String getReply() {
         try {
             String input;
-            System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Waiting for reply...");
+            System.out.println("Server> Waiting for reply...");
             synchronized (objectInputStream) {
-                while ((input = objectInputStream.readUTF()) == null);
+                while ((input = objectInputStream.readUTF()) == null) ;
             }
-            return  input;
+            return input;
         } catch (Exception ex) {
             terminateConnection();
             dh.log("Server> sendData> " + ex);
@@ -180,9 +191,9 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     }
 
     private boolean isLecturerOnline(String lecturerNumber) {
-        for (ConnectionHandler ch: connectionsList) {
-            if(ch instanceof LecturerConnectionHandler){
-                if(((LecturerConnectionHandler) ch).getLecturerID().matches(lecturerNumber)){
+        for (ConnectionHandler ch : connectionsList) {
+            if (ch instanceof LecturerConnectionHandler) {
+                if (((LecturerConnectionHandler) ch).getLecturerID().matches(lecturerNumber)) {
                     return true;
                 }
             }
@@ -195,16 +206,16 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         if (prevPassword.matches(sPassword)) {
             dh.changeStudentPassword(studentNumber, newPassword);
             outputQueue.add(0, "cp:y");
-        }else{
+        } else {
             outputQueue.add(0, "cp:n");
         }
     }
 
     private void sendMessage(String message, String lecturerNumber) {
-        if(isLecturerOnline(lecturerNumber)){
-            for (ConnectionHandler ch: connectionsList) {
-                if(ch instanceof LecturerConnectionHandler){
-                    if(((LecturerConnectionHandler) ch).getLecturerID().matches(lecturerNumber)){
+        if (isLecturerOnline(lecturerNumber)) {
+            for (ConnectionHandler ch : connectionsList) {
+                if (ch instanceof LecturerConnectionHandler) {
+                    if (((LecturerConnectionHandler) ch).getLecturerID().matches(lecturerNumber)) {
                         ((LecturerConnectionHandler) ch).addMessage(message, studentNumber);
                     }
                 }
@@ -213,9 +224,9 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     }
 
     private void forgotPassword(String email) {
-        if(dh.emailStudentPassword(email, studentNumber)) {
+        if (dh.emailStudentPassword(email, studentNumber)) {
             outputQueue.add(0, "fp:y");
-        }else{
+        } else {
             outputQueue.add(0, "fp:n");
         }
     }
@@ -228,13 +239,14 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
             while (size < fileBytes.length) {
                 System.out.println(Math.min(Server.BUFFER_SIZE, fileBytes.length - size));
                 outputQueue.add(new FilePart(Arrays.copyOfRange(fileBytes, size, size + Math.min(Server.BUFFER_SIZE, fileBytes.length - size)), Integer.parseInt(classID), fileName));
-                size +=  Math.min(Server.BUFFER_SIZE, fileBytes.length - size);
+                size += Math.min(Server.BUFFER_SIZE, fileBytes.length - size);
                 dh.log("Student " + studentNumber + "> Successfully Downloaded File: " + fileName + " For Class: " + classID);
-                System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Successfully Downloaded File: " + fileName + " For Class: " + classID);
+                System.out.println("Server> Successfully Downloaded File: " + fileName + " For Class: " + classID);
             }
         } catch (Exception ex) {
             dh.log("Server> getFile> " + ex);
-            ex.printStackTrace();;
+            ex.printStackTrace();
+            ;
         }
     }
 
@@ -258,7 +270,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         importantDates.addAll(dh.getImportantDates(studentNumber));
     }
 
-    public String getStudentNumber(){
+    public String getStudentNumber() {
         return studentNumber;
     }
 

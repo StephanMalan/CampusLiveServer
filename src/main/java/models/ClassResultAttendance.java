@@ -23,6 +23,10 @@ public class ClassResultAttendance implements Serializable {
         return results;
     }
 
+    public List<Attendance> getAttendance() {
+        return attendance;
+    }
+
     public String toString() {
         return studentClass.getModuleName();
     }

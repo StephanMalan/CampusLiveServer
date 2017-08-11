@@ -15,8 +15,10 @@ public class Server {
 
     static final File APPLICATION_FOLDER = new File(System.getProperty("user.home") + "/AppData/Local/Swooosh/CampusLive");
     static final File FILES_FOLDER = new File(APPLICATION_FOLDER.getAbsolutePath() + "/Files");
-    static final File DATABASE_FILE = new File(APPLICATION_FOLDER.getAbsolutePath()+ "/CampusLiveDB.db");
-    static final File LOG_FILE = new File(APPLICATION_FOLDER.getAbsolutePath()+ "/CampusLiveLogFile.txt");
+    static final File LECTURER_IMAGES = new File(APPLICATION_FOLDER.getAbsolutePath() + "/Lecturer");
+    static final File CONTACT_IMAGES = new File(APPLICATION_FOLDER.getAbsolutePath() + "/Contact");
+    static final File DATABASE_FILE = new File(APPLICATION_FOLDER.getAbsolutePath() + "/CampusLiveDB.db");
+    static final File LOG_FILE = new File(APPLICATION_FOLDER.getAbsolutePath() + "/CampusLiveLogFile.txt");
     static final int BUFFER_SIZE = 4194304;
     private ObservableList<ConnectionHandler> connectionsList = FXCollections.observableArrayList();
     public static final int PORT = 25760;
@@ -29,7 +31,7 @@ public class Server {
         if (!FILES_FOLDER.exists()) {
             FILES_FOLDER.mkdirs();
             dh.log("Server> Local Folders Created");
-            System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Local Folders Created");
+            System.out.println("Server> Local Folders Created");
         }
         new ClientListener().start();
     }
@@ -39,19 +41,19 @@ public class Server {
         public void run() {
             try {
                 dh.log("Server> Trying to set up server on port " + PORT);
-                System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Trying to set up server on port " + PORT);
+                System.out.println("Server> Trying to set up server on port " + PORT);
                 System.setProperty("javax.net.ssl.keyStore", "src/main/resources/campuslive.store");
                 System.setProperty("javax.net.ssl.keyStorePassword", "campuslivepassword1");
                 dh.log("Server> Set up server on port " + PORT);
-                System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Set up server on port " + PORT);
+                System.out.println("Server> Set up server on port " + PORT);
                 ServerSocket ss = SSLServerSocketFactory.getDefault().createServerSocket(PORT);
                 while (true) {
                     while (connectionsList.size() <= MAX_CONNECTIONS) {
-                        System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Waiting for new connection");
+                        System.out.println("Server> Waiting for new connection");
                         Socket s = ss.accept();
                         s.setKeepAlive(true);
                         dh.log("Server> Connection established on " + s.getInetAddress().getHostAddress() + ":" + s.getPort());
-                        System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Connection established on " + s.getInetAddress().getHostAddress() + ":" + s.getPort());
+                        System.out.println("Server> Connection established on " + s.getInetAddress().getHostAddress() + ":" + s.getPort());
                         new LoginManager(s).start();
                     }
                 }
@@ -116,7 +118,7 @@ public class Server {
                             objectOutputStream.writeObject("sao:n");
                             objectOutputStream.flush();
                         }
-                    }else if(input.startsWith("la:")) {
+                    } else if (input.startsWith("la:")) {
                         dh.log("Server> Authorising Lecturer : " + input.substring(3).split(":")[0]);
                         if (authoriseLecturer(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
                             dh.log("Server> Authorised Lecturer : " + input.substring(3).split(":")[0]);
@@ -132,7 +134,7 @@ public class Server {
                             objectOutputStream.writeObject("la:n");
                             objectOutputStream.flush();
                         }
-                    }  else if(input.startsWith("aa:")) {
+                    } else if (input.startsWith("aa:")) {
                         dh.log("Server> Authorising Admin : " + input.substring(3).split(":")[0]);
                         if (authoriseAdmin(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
                             dh.log("Server> Authorised Admin : " + input.substring(3).split(":")[0]);
