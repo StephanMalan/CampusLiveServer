@@ -7,7 +7,12 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import models.*;
+import models.all.ContactDetails;
+import models.all.FilePart;
+import models.all.ImportantDate;
+import models.all.Notice;
+import models.student.ClassLecturer;
+import models.all.Notification;
 
 import java.io.File;
 import java.io.ObjectInputStream;
@@ -23,7 +28,7 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     private ObjectInputStream objectInputStream;
     private ObjectOutputStream objectOutputStream;
     private String lecturerID;
-    private ObjectProperty<Lecturer> lecturer = new SimpleObjectProperty<>();
+    private ObjectProperty<ClassLecturer> lecturer = new SimpleObjectProperty<>();
     private ObservableList<ConnectionHandler> connectionsList;
     private ObservableList<Notice> notices = FXCollections.observableArrayList();
     private ObservableList<Notification> notifications = FXCollections.observableArrayList();
@@ -225,15 +230,15 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     }
 
     private void updateLecturer() {
-        //lecturer.setValue(dh.getLecturer(lecturerID));
+        //lecturer.setValue(dh.getClassLecturer(lecturerID));
     }
 
     private void updateNotices() {
-        notices.addAll(dh.getNotices(lecturerID, "Lecturer"));
+        notices.addAll(dh.getNotices(lecturerID, "ClassLecturer"));
     }
 
     private void updateNotifications() {
-        notifications.addAll(dh.getNotifications(lecturerID, "Lecturer"));
+        notifications.addAll(dh.getNotifications(lecturerID, "ClassLecturer"));
     }
 
     private void updateContactDetails() {

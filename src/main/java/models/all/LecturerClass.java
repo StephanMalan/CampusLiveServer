@@ -1,4 +1,7 @@
-package models;
+package models.all;
+
+import models.all.ClassFile;
+import models.all.ClassTime;
 
 import java.io.Serializable;
 import java.util.List;

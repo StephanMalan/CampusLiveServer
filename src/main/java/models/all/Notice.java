@@ -1,23 +1,19 @@
-package models;
+package models.all;
 
 import java.io.Serializable;
 
-public class Notification implements Serializable {
+public class Notice implements Serializable{
 
-    private int id;
     private String heading;
     private String description;
     private String tag;
+    private String expiryDate;
 
-    public Notification(int id, String heading, String description, String tag) {
-        this.id = id;
+    public Notice(String heading, String description, String tag, String expiryDate) {
         this.heading = heading;
         this.description = description;
         this.tag = tag;
-    }
-
-    public int getId() {
-        return id;
+        this.expiryDate = expiryDate;
     }
 
     public String getHeading() {
@@ -30,5 +26,9 @@ public class Notification implements Serializable {
 
     public String getTag() {
         return tag;
+    }
+
+    public String getExpiryDate(){
+        return expiryDate;
     }
 }

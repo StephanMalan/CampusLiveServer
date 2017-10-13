@@ -1,4 +1,6 @@
-package models;
+package models.all;
+
+import models.student.ClassLecturer;
 
 import java.io.Serializable;
 import java.util.List;
@@ -8,15 +10,15 @@ public class StudentClass implements Serializable {
     private int classID;
     private String moduleName;
     private String moduleNumber;
-    private Lecturer lecturer;
+    private ClassLecturer classLecturer;
     private List<ClassTime> classTimes;
     private List<ClassFile> files;
 
-    public StudentClass(int classID, String moduleName, String moduleNumber, Lecturer lecturer, List<ClassTime> classTimes, List<ClassFile> files) {
+    public StudentClass(int classID, String moduleName, String moduleNumber, ClassLecturer classLecturer, List<ClassTime> classTimes, List<ClassFile> files) {
         this.classID = classID;
         this.moduleName = moduleName;
         this.moduleNumber = moduleNumber;
-        this.lecturer = lecturer;
+        this.classLecturer = classLecturer;
         this.classTimes = classTimes;
         this.files = files;
     }
@@ -33,8 +35,8 @@ public class StudentClass implements Serializable {
         return moduleNumber;
     }
 
-    public Lecturer getLecturer() {
-        return lecturer;
+    public ClassLecturer getClassLecturer() {
+        return classLecturer;
     }
 
     public List<ClassTime> getClassTimes() {

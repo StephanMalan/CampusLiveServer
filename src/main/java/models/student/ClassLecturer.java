@@ -1,4 +1,4 @@
-package models;
+package models.student;
 
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
@@ -7,7 +7,7 @@ import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.Serializable;
 
-public class Lecturer implements Serializable{
+public class ClassLecturer implements Serializable{
 
     private String lecturerID;
     private String firstName;
@@ -16,7 +16,7 @@ public class Lecturer implements Serializable{
     private String email;
     private byte[] lecturerImage;
 
-    public Lecturer(String lecturerID, String firstName, String lastName, String contactNumber, String email, byte[] lecturerImage) {
+    public ClassLecturer(String lecturerID, String firstName, String lastName, String contactNumber, String email, byte[] lecturerImage) {
         this.lecturerID = lecturerID;
         this.firstName = firstName;
         this.lastName = lastName;

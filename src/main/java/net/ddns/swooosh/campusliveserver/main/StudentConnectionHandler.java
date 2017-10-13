@@ -7,14 +7,18 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import models.*;
+import models.all.ContactDetails;
+import models.all.FilePart;
+import models.all.ImportantDate;
+import models.all.Notice;
+import models.all.Notification;
+import models.all.Student;
 
 import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 public class StudentConnectionHandler extends ConnectionHandler implements Runnable {
@@ -109,7 +113,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                 String input;
                 if ((input = getReply()) != null) {
                     if (input.startsWith("lo:")) {
-                        dh.log("Student " + studentNumber + "> Requested Lecturer Online");
+                        dh.log("Student " + studentNumber + "> Requested ClassLecturer Online");
                         if (isLecturerOnline(input.substring(3))) {
                             outputQueue.add(0, "lo:y");
                         } else {
@@ -119,7 +123,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                         dh.log("Student " + studentNumber + "> Requested Change Password");
                         changePassword(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
                     } else if (input.startsWith("sm:")) {
-                        dh.log("Student " + studentNumber + "> Send Direct Message to Lecturer: " + input.substring(3).split(":")[1] + "> " + input.substring(3).split(":")[0]);
+                        dh.log("Student " + studentNumber + "> Send Direct Message to ClassLecturer: " + input.substring(3).split(":")[1] + "> " + input.substring(3).split(":")[0]);
                         sendMessage(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
                     } else if (input.startsWith("fp:")) {
                         dh.log("Student " + studentNumber + "> Requested Forgot Password");

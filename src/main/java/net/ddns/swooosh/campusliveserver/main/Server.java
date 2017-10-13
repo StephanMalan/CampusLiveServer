@@ -15,7 +15,7 @@ public class Server {
 
     static final File APPLICATION_FOLDER = new File(System.getProperty("user.home") + "/AppData/Local/Swooosh/CampusLive");
     static final File FILES_FOLDER = new File(APPLICATION_FOLDER.getAbsolutePath() + "/Files");
-    static final File LECTURER_IMAGES = new File(APPLICATION_FOLDER.getAbsolutePath() + "/Lecturer");
+    static final File LECTURER_IMAGES = new File(APPLICATION_FOLDER.getAbsolutePath() + "/ClassLecturer");
     static final File CONTACT_IMAGES = new File(APPLICATION_FOLDER.getAbsolutePath() + "/Contact");
     static final File DATABASE_FILE = new File(APPLICATION_FOLDER.getAbsolutePath() + "/CampusLiveDB.db");
     static final File LOG_FILE = new File(APPLICATION_FOLDER.getAbsolutePath() + "/CampusLiveLogFile.txt");
@@ -40,12 +40,12 @@ public class Server {
         @Override
         public void run() {
             try {
-                dh.log("Server> Trying to set up server on port " + PORT);
-                System.out.println("Server> Trying to set up server on port " + PORT);
-                System.setProperty("javax.net.ssl.keyStore", "src/main/resources/campuslive.store");
+                dh.log("Server> Trying to set up lecturer on port " + PORT);
+                System.out.println("Server> Trying to set up lecturer on port " + PORT);
+                System.setProperty("javax.net.ssl.keyStore", APPLICATION_FOLDER.getAbsolutePath() + "/campuslive.store");
                 System.setProperty("javax.net.ssl.keyStorePassword", "campuslivepassword1");
-                dh.log("Server> Set up server on port " + PORT);
-                System.out.println("Server> Set up server on port " + PORT);
+                dh.log("Server> Set up lecturer on port " + PORT);
+                System.out.println("Server> Set up lecturer on port " + PORT);
                 ServerSocket ss = SSLServerSocketFactory.getDefault().createServerSocket(PORT);
                 while (true) {
                     while (connectionsList.size() <= MAX_CONNECTIONS) {
@@ -57,7 +57,7 @@ public class Server {
                         new LoginManager(s).start();
                     }
                 }
-            } catch (IOException ex) {
+            } catch (Exception ex) {
                 dh.log("Server> ClientListener> " + ex);
                 ex.printStackTrace();
             }
@@ -102,7 +102,7 @@ public class Server {
                     } else if (input.startsWith("sao:")) {
                         dh.log("Server> Authorising Student Off-Campus: " + input.substring(3).split(":")[0]);
                         if (authoriseStudent(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
-                            dh.log("Server> Authorisied Student Off-Campus: " + input.substring(3).split(":")[0]);
+                            dh.log("Server> Authorised Student Off-Campus: " + input.substring(3).split(":")[0]);
                             objectOutputStream.writeObject("sao:y");
                             objectOutputStream.flush();
 
@@ -119,9 +119,9 @@ public class Server {
                             objectOutputStream.flush();
                         }
                     } else if (input.startsWith("la:")) {
-                        dh.log("Server> Authorising Lecturer : " + input.substring(3).split(":")[0]);
+                        dh.log("Server> Authorising ClassLecturer : " + input.substring(3).split(":")[0]);
                         if (authoriseLecturer(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
-                            dh.log("Server> Authorised Lecturer : " + input.substring(3).split(":")[0]);
+                            dh.log("Server> Authorised ClassLecturer : " + input.substring(3).split(":")[0]);
                             objectOutputStream.writeObject("la:y");
                             objectOutputStream.flush();
                             LecturerConnectionHandler lecturerConnectionHandler = new LecturerConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(3).split(":")[0], connectionsList);
@@ -130,7 +130,7 @@ public class Server {
                             connectionsList.add(lecturerConnectionHandler);
                             break StopClass;
                         } else {
-                            dh.log("Server> Authorising Lecturer : " + input.substring(3).split(":")[0] + " Failed");
+                            dh.log("Server> Authorising ClassLecturer : " + input.substring(3).split(":")[0] + " Failed");
                             objectOutputStream.writeObject("la:n");
                             objectOutputStream.flush();
                         }

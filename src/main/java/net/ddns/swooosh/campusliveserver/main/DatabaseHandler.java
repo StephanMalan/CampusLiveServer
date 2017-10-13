@@ -4,7 +4,10 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
-import models.*;
+import models.admin.Admin;
+import models.all.*;
+import models.all.LecturerClass;
+import models.student.*;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -74,7 +77,7 @@ public class DatabaseHandler {
                         "LecturerID text);");
                 stmt.execute("CREATE TABLE Lecturer (" +
                         "LecturerID text PRIMARY KEY, " +
-                        "Campus text, " +
+                        "Campus text, " + //TODO remove
                         "FirstName text, " +
                         "LastName text, " +
                         "Password text, " +
@@ -244,13 +247,13 @@ public class DatabaseHandler {
         }
     }
 
-    public Lecturer getLecturer(int classID) {
+    public ClassLecturer getLecturer(int classID) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Lecturer, Class WHERE Lecturer.LecturerID = Class.LecturerID AND Class.ClassID = ?");
             preparedStatement.setInt(1, classID);
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
-                return new Lecturer(rs.getString("LecturerID"), rs.getString("FirstName"), rs.getString("LastName"), rs.getString("ContactNumber"), rs.getString("Email"), getLecturerImage(rs.getString("LecturerID")));
+                return new ClassLecturer(rs.getString("LecturerID"), rs.getString("FirstName"), rs.getString("LastName"), rs.getString("ContactNumber"), rs.getString("Email"), getLecturerImage(rs.getString("LecturerID")));
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -397,7 +400,7 @@ public class DatabaseHandler {
                 Notice newNotice = new Notice(rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag"), rs.getString("ExpiryDate"));
                 notices.add(newNotice);
             }
-            log("Server> Successfully Gotten Notices For Student/Lecturer: " + studentNumber);
+            log("Server> Successfully Gotten Notices For Student/ClassLecturer: " + studentNumber);
             return notices;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -418,7 +421,7 @@ public class DatabaseHandler {
                 Notification newNotification = new Notification(rs.getInt("NotificationID"), rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag"));
                 notifications.add(newNotification);
             }
-            log("Server> Successfully Gotten Notifications For Student/Lecturer: " + studentNumber);
+            log("Server> Successfully Gotten Notifications For Student/ClassLecturer: " + studentNumber);
             return notifications;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -436,7 +439,7 @@ public class DatabaseHandler {
                 ContactDetails newContactDetail = new ContactDetails(rs.getString("Name"), rs.getString("Position"), rs.getString("ContactNumber"), rs.getString("Email"), getContactImage(rs.getString("ContactDetailsID")));
                 contactDetails.add(newContactDetail);
             }
-            log("Server> Successfully Gotten Notices For Student/Lecturer: " + number);
+            log("Server> Successfully Gotten Notices For Student/ClassLecturer: " + number);
             return contactDetails;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -480,7 +483,7 @@ public class DatabaseHandler {
                 ImportantDate newImportantDate = new ImportantDate(rs.getString("IDate"), rs.getString("Description"));
                 importantDates.add(newImportantDate);
             }
-            log("Server> Successfully Gotten Notices For Student/Lecturer: " + number);
+            log("Server> Successfully Gotten Notices For Student/ClassLecturer: " + number);
             return importantDates;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -502,18 +505,18 @@ public class DatabaseHandler {
     }
 
     //TODO moet nog hieroor praat. ek neem aan dis vir lecturer client maar die lecturer model is anders as die een wat ons vir hull moet stuur
-    /*public Lecturer getLecturer(String lecturerNumber) {
+    /*public ClassLecturer getClassLecturer(String lecturerNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Lecturer WHERE LecturerNumber = ?");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM ClassLecturer WHERE LecturerNumber = ?");
             preparedStatement.setString(1, lecturerNumber);
             ResultSet rs = preparedStatement.executeQuery();
             List<LecturerClass> classes = getLecturerClasses(lecturerNumber);
-            Lecturer student = new Lecturer(rs.getString("LecturerNumber"), rs.getString("FirstName"), rs.getString("LastName"), rs.getString("ContactNumber"), rs.getString("Email"));
-            log("Server> Successfully Created Lecturer: " + lecturerNumber);
+            ClassLecturer student = new ClassLecturer(rs.getString("LecturerNumber"), rs.getString("FirstName"), rs.getString("LastName"), rs.getString("ContactNumber"), rs.getString("Email"));
+            log("Server> Successfully Created ClassLecturer: " + lecturerNumber);
             return student;
         } catch (SQLException ex) {
             ex.printStackTrace();
-            log("Server> getLecturer> " + ex);
+            log("Server> getClassLecturer> " + ex);
             return null;
         }
     }*/
@@ -527,7 +530,7 @@ public class DatabaseHandler {
             while (rs.next()) {
                 classes.add(new LecturerClass(rs.getString("ModuleName"), rs.getString("ModuleNumber"), getClassTimes(rs.getInt("ClassID"), lecturerNumber), getFiles(rs.getInt("ClassID"), lecturerNumber)));
             }
-            log("Server> Successfully Gotten Classes For Lecturer: " + lecturerNumber);
+            log("Server> Successfully Gotten Classes For ClassLecturer: " + lecturerNumber);
             return classes;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -542,10 +545,10 @@ public class DatabaseHandler {
             preparedStatement.setString(1, lecturerNumber);
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
-                log("Server> Successfully Gotten Password For Lecturer: " + lecturerNumber);
+                log("Server> Successfully Gotten Password For ClassLecturer: " + lecturerNumber);
                 return rs.getString("Password");
             } else {
-                log("Server> Failed To Get Password For Lecturer: " + lecturerNumber);
+                log("Server> Failed To Get Password For ClassLecturer: " + lecturerNumber);
                 return null;
             }
         } catch (SQLException ex) {
@@ -560,7 +563,7 @@ public class DatabaseHandler {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Lecturer SET Password = ? WHERE LecturerNumber = ?;");
             preparedStatement.setString(1, newPassword);
             preparedStatement.setString(2, lecturerNumber);
-            log("Server> Successfully Changed Password For Lecturer: " + lecturerNumber);
+            log("Server> Successfully Changed Password For ClassLecturer: " + lecturerNumber);
             return preparedStatement.execute();
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -575,10 +578,10 @@ public class DatabaseHandler {
             preparedStatement.setString(1, email);
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
-                log("Server> Successfully Emailed Password For Lecturer: " + lecturerNumber);
+                log("Server> Successfully Emailed Password For ClassLecturer: " + lecturerNumber);
                 return mail.emailPassword(rs.getString("LecturerNumber"), email, rs.getString("Password"));
             } else {
-                log("Server> Failed To Email Password For Lecturer: " + lecturerNumber);
+                log("Server> Failed To Email Password For ClassLecturer: " + lecturerNumber);
                 return false;
             }
         } catch (SQLException ex) {
@@ -642,7 +645,7 @@ public class DatabaseHandler {
             preparedStatement.setString(5, "password");
             preparedStatement.setString(6, email);
             preparedStatement.setString(7, contactNumber);
-            log("Admin> Successfully Added Lecturer: " + lecturerNumber);
+            log("Admin> Successfully Added ClassLecturer: " + lecturerNumber);
             return preparedStatement.execute();
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -807,7 +810,7 @@ public class DatabaseHandler {
             preparedStatement.setString(6, email);
             preparedStatement.setString(7, contactNumber);
             preparedStatement.setString(8, oldLecturerNumber);
-            log("Admin> Successfully Updated Lecturer: " + oldLecturerNumber);
+            log("Admin> Successfully Updated ClassLecturer: " + oldLecturerNumber);
             return preparedStatement.executeQuery().next();
         } catch (SQLException ex) {
             ex.printStackTrace();
