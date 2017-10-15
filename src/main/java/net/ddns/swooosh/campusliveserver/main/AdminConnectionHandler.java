@@ -54,15 +54,18 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
     private class InputProcessor extends Thread {
         public void run() {
             while (running.get()) {
-                String input;
+                Object input;
                 if ((input = getReply()) != null) {
-                    if (input.startsWith(":")) {
+                    if(input instanceof String) {
+                        String text = input.toString();
+                        if (text.startsWith(":")) {
 
-                    } else if (input.startsWith("lgt:")) {
-                        terminateConnection();
-                    } else {
-                        dh.log("Admin " + username + "> Requested Unknown Command: " + input);
-                        System.out.println("Unknown command: " + input);
+                        } else if (text.startsWith("lgt:")) {
+                            terminateConnection();
+                        } else {
+                            dh.log("Admin " + username + "> Requested Unknown Command: " + input);
+                            System.out.println("Unknown command: " + input);
+                        }
                     }
                 }
             }

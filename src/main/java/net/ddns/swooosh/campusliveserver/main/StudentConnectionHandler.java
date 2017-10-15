@@ -8,6 +8,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import models.*;
+
 import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -97,33 +98,36 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     private class InputProcessor extends Thread {
         public void run() {
             while (running.get()) {
-                String input;
+                Object input;
                 if ((input = getReply()) != null) {
-                    if (input.startsWith("lo:")) {
-                        dh.log("Student " + studentNumber + "> Requested Lecturer Online");
-                        if(isLecturerOnline(input.substring(3))){
-                            outputQueue.add(0, "lo:y");
-                        }else{
-                            outputQueue.add(0, "lo:n");
+                    if (input instanceof String) {
+                        String text = input.toString();
+                        if (text.startsWith("lo:")) {
+                            dh.log("Student " + studentNumber + "> Requested Lecturer Online");
+                            if (isLecturerOnline(text.substring(3))) {
+                                outputQueue.add(0, "lo:y");
+                            } else {
+                                outputQueue.add(0, "lo:n");
+                            }
+                        } else if (text.startsWith("cp:")) {
+                            dh.log("Student " + studentNumber + "> Requested Change Password");
+                            changePassword(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
+                        } else if (text.startsWith("sm:")) {
+                            dh.log("Student " + studentNumber + "> Send Direct Message to Lecturer: " + text.substring(3).split(":")[1] + "> " + text.substring(3).split(":")[0]);
+                            sendMessage(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
+                        } else if (text.startsWith("fp:")) {
+                            dh.log("Student " + studentNumber + "> Requested Forgot Password");
+                            forgotPassword(text.substring(3));
+                        } else if (text.startsWith("gf:")) {
+                            dh.log("Student " + studentNumber + "> Requested File: " + text.substring(3).split(":")[1] + " From class: " + text.substring(3).split(":")[0]);
+                            getFile(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
+                        } else if (text.startsWith("lgt:")) {
+                            terminateConnection();
+                        } else {
+                            dh.log("Student " + studentNumber + "> Requested Unknown Command: " + input);
+                            System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Unknown command: " + input);
                         }
-                    } else if (input.startsWith("cp:")) {
-                        dh.log("Student " + studentNumber + "> Requested Change Password");
-                        changePassword(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
-                    } else if (input.startsWith("sm:")) {
-                        dh.log("Student " + studentNumber + "> Send Direct Message to Lecturer: " + input.substring(3).split(":")[1] + "> " + input.substring(3).split(":")[0]);
-                        sendMessage(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
-                    } else if (input.startsWith("fp:")) {
-                        dh.log("Student " + studentNumber + "> Requested Forgot Password");
-                        forgotPassword(input.substring(3));
-                    } else if (input.startsWith("gf:")) {
-                        dh.log("Student " + studentNumber + "> Requested File: " + input.substring(3).split(":")[1] + " From class: " + input.substring(3).split(":")[0]);
-                        getFile(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
-                    } else if (input.startsWith("lgt:")) {
-                        terminateConnection();
-                    } else {
-                        dh.log("Student " + studentNumber + "> Requested Unknown Command: " + input);
-                        System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Unknown command: " + input);
-                    }
+                    }else{}//Object instance of
                 }
             }
         }
@@ -168,9 +172,9 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
             String input;
             System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Waiting for reply...");
             synchronized (objectInputStream) {
-                while ((input = objectInputStream.readUTF()) == null);
+                while ((input = objectInputStream.readUTF()) == null) ;
             }
-            return  input;
+            return input;
         } catch (Exception ex) {
             terminateConnection();
             dh.log("Server> sendData> " + ex);
@@ -180,9 +184,9 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     }
 
     private boolean isLecturerOnline(String lecturerNumber) {
-        for (ConnectionHandler ch: connectionsList) {
-            if(ch instanceof LecturerConnectionHandler){
-                if(((LecturerConnectionHandler) ch).getLecturerID().matches(lecturerNumber)){
+        for (ConnectionHandler ch : connectionsList) {
+            if (ch instanceof LecturerConnectionHandler) {
+                if (((LecturerConnectionHandler) ch).getLecturerID().matches(lecturerNumber)) {
                     return true;
                 }
             }
@@ -195,16 +199,16 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         if (prevPassword.matches(sPassword)) {
             dh.changeStudentPassword(studentNumber, newPassword);
             outputQueue.add(0, "cp:y");
-        }else{
+        } else {
             outputQueue.add(0, "cp:n");
         }
     }
 
     private void sendMessage(String message, String lecturerNumber) {
-        if(isLecturerOnline(lecturerNumber)){
-            for (ConnectionHandler ch: connectionsList) {
-                if(ch instanceof LecturerConnectionHandler){
-                    if(((LecturerConnectionHandler) ch).getLecturerID().matches(lecturerNumber)){
+        if (isLecturerOnline(lecturerNumber)) {
+            for (ConnectionHandler ch : connectionsList) {
+                if (ch instanceof LecturerConnectionHandler) {
+                    if (((LecturerConnectionHandler) ch).getLecturerID().matches(lecturerNumber)) {
                         ((LecturerConnectionHandler) ch).addMessage(message, studentNumber);
                     }
                 }
@@ -213,9 +217,9 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     }
 
     private void forgotPassword(String email) {
-        if(dh.emailStudentPassword(email, studentNumber)) {
+        if (dh.emailStudentPassword(email, studentNumber)) {
             outputQueue.add(0, "fp:y");
-        }else{
+        } else {
             outputQueue.add(0, "fp:n");
         }
     }
@@ -228,13 +232,14 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
             while (size < fileBytes.length) {
                 System.out.println(Math.min(Server.BUFFER_SIZE, fileBytes.length - size));
                 outputQueue.add(new FilePart(Arrays.copyOfRange(fileBytes, size, size + Math.min(Server.BUFFER_SIZE, fileBytes.length - size)), Integer.parseInt(classID), fileName));
-                size +=  Math.min(Server.BUFFER_SIZE, fileBytes.length - size);
+                size += Math.min(Server.BUFFER_SIZE, fileBytes.length - size);
                 dh.log("Student " + studentNumber + "> Successfully Downloaded File: " + fileName + " For Class: " + classID);
                 System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Successfully Downloaded File: " + fileName + " For Class: " + classID);
             }
         } catch (Exception ex) {
             dh.log("Server> getFile> " + ex);
-            ex.printStackTrace();;
+            ex.printStackTrace();
+            ;
         }
     }
 
@@ -258,7 +263,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         importantDates.addAll(dh.getImportantDates(studentNumber));
     }
 
-    public String getStudentNumber(){
+    public String getStudentNumber() {
         return studentNumber;
     }
 

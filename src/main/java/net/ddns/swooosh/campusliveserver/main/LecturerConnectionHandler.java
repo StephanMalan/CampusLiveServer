@@ -95,21 +95,24 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     private class InputProcessor extends Thread {
         public void run() {
             while (running.get()) {
-                String input;
+                Object input;
                 if ((input = getReply()) != null) {
-                    if (input.startsWith("cp:")) {
-                        changePassword(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
-                    } else if (input.startsWith("fp:")) {
-                        forgotPassword(input.substring(3));
-                    } else if (input.startsWith("gf:")) {
-                        getFile(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
-                    } else if (input.startsWith("uf:")) {
-                        uploadFile(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
-                    } else if (input.startsWith("lgt:")) {
-                        terminateConnection();
-                    } else {
-                        System.out.println("Unknown command: " + input);
-                    }
+                    if(input instanceof String) {
+                        String text = input.toString();
+                        if (text.startsWith("cp:")) {
+                            changePassword(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
+                        } else if (text.startsWith("fp:")) {
+                            forgotPassword(text.substring(3));
+                        } else if (text.startsWith("gf:")) {
+                            getFile(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
+                        } else if (text.startsWith("uf:")) {
+                            uploadFile(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
+                        } else if (text.startsWith("lgt:")) {
+                            terminateConnection();
+                        } else {
+                            System.out.println("Unknown command: " + input);
+                        }
+                    }else{}//Object instanceof
                 }
             }
         }

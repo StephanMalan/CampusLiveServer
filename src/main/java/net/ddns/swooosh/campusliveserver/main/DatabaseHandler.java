@@ -434,7 +434,7 @@ public class DatabaseHandler {
         return files;
     }
 
-    public Lecturer getLecturer(String lecturerNumber) {
+    public Lecturer getLecturer(String lecturerNumber) {//new lecturert
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Lecturer WHERE LecturerNumber = ?");
             preparedStatement.setString(1, lecturerNumber);
