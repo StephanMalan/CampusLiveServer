@@ -1,4 +1,4 @@
-package models;
+package models.all;
 
 import java.io.Serializable;
 import java.util.List;
@@ -21,6 +21,10 @@ public class ClassResultAttendance implements Serializable {
 
     public List<Result> getResults() {
         return results;
+    }
+
+    public List<Attendance> getAttendance() {
+        return attendance;
     }
 
     public String toString() {

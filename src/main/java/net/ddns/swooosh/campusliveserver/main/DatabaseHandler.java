@@ -2,9 +2,16 @@ package net.ddns.swooosh.campusliveserver.main;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import models.*;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.image.Image;
+import models.admin.Admin;
+import models.all.*;
+import models.all.LecturerClass;
+import models.student.*;
 
-import java.io.File;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -13,9 +20,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -73,7 +77,7 @@ public class DatabaseHandler {
                         "LecturerID text);");
                 stmt.execute("CREATE TABLE Lecturer (" +
                         "LecturerID text PRIMARY KEY, " +
-                        "Campus text, " +
+                        "Campus text, " + //TODO remove
                         "FirstName text, " +
                         "LastName text, " +
                         "Password text, " +
@@ -105,7 +109,7 @@ public class DatabaseHandler {
                 stmt.execute("CREATE TABLE ContactDetails (" +
                         "ContactDetailsID integer PRIMARY KEY AUTOINCREMENT, " +
                         "Name text, " +
-                        "Postition text, " +
+                        "Position text, " +
                         "Department text, " +
                         "ContactNumber text, " +
                         "Email text);");
@@ -118,7 +122,7 @@ public class DatabaseHandler {
                         "Password text);");
                 log("Server> Created Database");
             }
-            System.out.println("net.ddns.swooosh.campusliveserver.main.Server> Connected to database");
+            System.out.println("Server> Connected to database");
             log("Server> Connected to database");
             return true;
         } catch (SQLException ex) {
@@ -225,14 +229,14 @@ public class DatabaseHandler {
 
     public StudentClass getStudentClass(int classID, String studentNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Class, Lecturer, Registered WHERE Registered.ClassID = Class.ClassID AND Class.LecturerID = Lecturer.LecturerID AND Class.ClassID = ?");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Class, Registered WHERE Registered.ClassID = Class.ClassID AND Class.ClassID = ?");
             preparedStatement.setInt(1, classID);
             ResultSet rs = preparedStatement.executeQuery();
             StudentClass studentClass = null;
             if (rs.next()) {
                 List<ClassTime> classTimes = getClassTimes(classID, studentNumber);
                 List<ClassFile> files = getFiles(classID, studentNumber);
-                studentClass = new StudentClass(rs.getString("ModuleName"), rs.getString("ModuleNumber"), rs.getString("FirstName"), rs.getString("LastName"), rs.getString("LecturerID"), rs.getString("Email"), classTimes, files);
+                studentClass = new StudentClass(rs.getInt("ClassID"), rs.getString("ModuleName"), rs.getString("ModuleNumber"), getLecturer(classID), classTimes, files);
             }
             log("Server> Successfully Created Class: " + classID + " for Student: " + studentNumber);
             return studentClass;
@@ -243,7 +247,47 @@ public class DatabaseHandler {
         }
     }
 
-    public List<Attendance> getStudentAttendance(int classID, String studentNumber){
+    public ClassLecturer getLecturer(int classID) {
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Lecturer, Class WHERE Lecturer.LecturerID = Class.LecturerID AND Class.ClassID = ?");
+            preparedStatement.setInt(1, classID);
+            ResultSet rs = preparedStatement.executeQuery();
+            if (rs.next()) {
+                return new ClassLecturer(rs.getString("LecturerID"), rs.getString("FirstName"), rs.getString("LastName"), rs.getString("ContactNumber"), rs.getString("Email"), getLecturerImage(rs.getString("LecturerID")));
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    public byte[] getLecturerImage(String lecturerNumber) {
+        try {
+            BufferedImage lecturerImage = ImageIO.read(new File(Server.LECTURER_IMAGES + "/" + lecturerNumber + "/profile.jpg"));
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ImageIO.write(lecturerImage, "jpg", byteArrayOutputStream);
+            byteArrayOutputStream.flush();
+            byte[] lecturerImageBytes = byteArrayOutputStream.toByteArray();
+            byteArrayOutputStream.close();
+            return lecturerImageBytes;
+        } catch (Exception ex) {
+            System.out.println("Server> Can't find picture for lecturer, " + lecturerNumber);
+        }
+        byte[] defaultImageBytes = new byte[0];
+        try {
+            BufferedImage defaultImage = SwingFXUtils.fromFXImage(new Image(getClass().getClassLoader().getResourceAsStream("DefaultProfile.jpg")), null);
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ImageIO.write(defaultImage, "jpg", byteArrayOutputStream);
+            byteArrayOutputStream.flush();
+            defaultImageBytes = byteArrayOutputStream.toByteArray();
+            byteArrayOutputStream.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return defaultImageBytes;
+    }
+
+    public List<Attendance> getStudentAttendance(int classID, String studentNumber) {
         List<Attendance> attendance = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Attendance WHERE ClassID = ? AND StudentNumber = ?;");
@@ -332,7 +376,7 @@ public class DatabaseHandler {
         }
     }
 
-    public String getStudentQualification(String studentNumber){
+    public String getStudentQualification(String studentNumber) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT Qualification From Student WHERE StudentNumber = ?;");
             preparedStatement.setString(1, studentNumber);
@@ -344,19 +388,19 @@ public class DatabaseHandler {
         }
     }
 
-    public ObservableList<Notice> getNotices(String number, String qualification) {//if date past
+    public ObservableList<Notice> getNotices(String studentNumber, String qualification) {//if date past
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * From Notices WHERE Tag = ? OR Tag = ? OR Tag = ?;");
-            preparedStatement.setString(1, number);
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * From Notice WHERE Tag = ? OR Tag = ? OR Tag = ?;");
+            preparedStatement.setString(1, studentNumber);
             preparedStatement.setString(2, qualification);
-            preparedStatement.setString(3, "campus");
+            preparedStatement.setString(3, "Campus");
             ResultSet rs = preparedStatement.executeQuery();
             ObservableList<Notice> notices = FXCollections.observableArrayList();
             while (rs.next()) {
                 Notice newNotice = new Notice(rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag"), rs.getString("ExpiryDate"));
                 notices.add(newNotice);
             }
-            log("Server> Successfully Gotten Notices For Student/Lecturer: " + number);
+            log("Server> Successfully Gotten Notices For Student/ClassLecturer: " + studentNumber);
             return notices;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -365,19 +409,19 @@ public class DatabaseHandler {
         }
     }
 
-    public ObservableList<Notification> getNotifications(String number, String qualification) {//if dismissed
+    public ObservableList<Notification> getNotifications(String studentNumber, String qualification) {//if dismissed
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * From Notifications WHERE Tag = ? OR Tag = ? OR Tag = ?;");
-            preparedStatement.setString(1, number);
-            preparedStatement.setString(2,qualification);
-            preparedStatement.setString(3,"campus");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * From Notification WHERE Tag = ? OR Tag = ? OR Tag = ?;");
+            preparedStatement.setString(1, studentNumber);
+            preparedStatement.setString(2, qualification);
+            preparedStatement.setString(3, "Campus");
             ResultSet rs = preparedStatement.executeQuery();
             ObservableList<Notification> notifications = FXCollections.observableArrayList();
             while (rs.next()) {
-                Notification newNotification = new Notification(rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag"));
+                Notification newNotification = new Notification(rs.getInt("NotificationID"), rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag"));
                 notifications.add(newNotification);
             }
-            log("Server> Successfully Gotten Notifications For Student/Lecturer: " + number);
+            log("Server> Successfully Gotten Notifications For Student/ClassLecturer: " + studentNumber);
             return notifications;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -392,10 +436,10 @@ public class DatabaseHandler {
             ResultSet rs = preparedStatement.executeQuery();
             ObservableList<ContactDetails> contactDetails = FXCollections.observableArrayList();
             while (rs.next()) {
-                ContactDetails newcontactDetail = new ContactDetails(rs.getString("Name"), rs.getString("Position"), rs.getString("Department"), rs.getString("ContactNumber"), rs.getString("Email"));
-                contactDetails.add(newcontactDetail);
+                ContactDetails newContactDetail = new ContactDetails(rs.getString("Name"), rs.getString("Position"), rs.getString("ContactNumber"), rs.getString("Email"), getContactImage(rs.getString("ContactDetailsID")));
+                contactDetails.add(newContactDetail);
             }
-            log("Server> Successfully Gotten Notices For Student/Lecturer: " + number);
+            log("Server> Successfully Gotten Notices For Student/ClassLecturer: " + number);
             return contactDetails;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -404,16 +448,42 @@ public class DatabaseHandler {
         }
     }
 
+    public byte[] getContactImage(String contactID) {
+        try {
+            BufferedImage lecturerImage = ImageIO.read(new File(Server.CONTACT_IMAGES + "/" + contactID + "/profile.jpg"));
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ImageIO.write(lecturerImage, "jpg", byteArrayOutputStream);
+            byteArrayOutputStream.flush();
+            byte[] lecturerImageBytes = byteArrayOutputStream.toByteArray();
+            byteArrayOutputStream.close();
+            return lecturerImageBytes;
+        } catch (Exception ex) {
+            System.out.println("Server> Can't find picture for contact, " + contactID);
+        }
+        byte[] defaultImageBytes = new byte[0];
+        try {
+            BufferedImage defaultContactImage = SwingFXUtils.fromFXImage(new Image(getClass().getClassLoader().getResourceAsStream("DefaultProfile.jpg")), null);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            ImageIO.write(defaultContactImage, "jpg", outputStream);
+            outputStream.flush();
+            defaultImageBytes = outputStream.toByteArray();
+            outputStream.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return defaultImageBytes;
+    }
+
     public ObservableList<ImportantDate> getImportantDates(String number) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * From ImportantDates;");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * From ImportantDate ORDER BY IDate;");
             ResultSet rs = preparedStatement.executeQuery();
             ObservableList<ImportantDate> importantDates = FXCollections.observableArrayList();
             while (rs.next()) {
                 ImportantDate newImportantDate = new ImportantDate(rs.getString("IDate"), rs.getString("Description"));
                 importantDates.add(newImportantDate);
             }
-            log("Server> Successfully Gotten Notices For Student/Lecturer: " + number);
+            log("Server> Successfully Gotten Notices For Student/ClassLecturer: " + number);
             return importantDates;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -434,21 +504,22 @@ public class DatabaseHandler {
         return files;
     }
 
-    public Lecturer getLecturer(String lecturerNumber) {//new lecturert
+    //TODO moet nog hieroor praat. ek neem aan dis vir lecturer client maar die lecturer model is anders as die een wat ons vir hull moet stuur
+    /*public ClassLecturer getClassLecturer(String lecturerNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Lecturer WHERE LecturerNumber = ?");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM ClassLecturer WHERE LecturerNumber = ?");
             preparedStatement.setString(1, lecturerNumber);
             ResultSet rs = preparedStatement.executeQuery();
             List<LecturerClass> classes = getLecturerClasses(lecturerNumber);
-            Lecturer student = new Lecturer(rs.getString("LecturerNumber"), rs.getString("Campus"), rs.getString("FirstName"), rs.getString("LastName"), rs.getString("Email"), classes);
-            log("Server> Successfully Created Lecturer: " + lecturerNumber);
+            ClassLecturer student = new ClassLecturer(rs.getString("LecturerNumber"), rs.getString("FirstName"), rs.getString("LastName"), rs.getString("ContactNumber"), rs.getString("Email"));
+            log("Server> Successfully Created ClassLecturer: " + lecturerNumber);
             return student;
         } catch (SQLException ex) {
             ex.printStackTrace();
-            log("Server> getLecturer> " + ex);
+            log("Server> getClassLecturer> " + ex);
             return null;
         }
-    }
+    }*/
 
     public List<LecturerClass> getLecturerClasses(String lecturerNumber) {
         List<LecturerClass> classes = new ArrayList<>();
@@ -459,7 +530,7 @@ public class DatabaseHandler {
             while (rs.next()) {
                 classes.add(new LecturerClass(rs.getString("ModuleName"), rs.getString("ModuleNumber"), getClassTimes(rs.getInt("ClassID"), lecturerNumber), getFiles(rs.getInt("ClassID"), lecturerNumber)));
             }
-            log("Server> Successfully Gotten Classes For Lecturer: " + lecturerNumber);
+            log("Server> Successfully Gotten Classes For ClassLecturer: " + lecturerNumber);
             return classes;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -474,10 +545,10 @@ public class DatabaseHandler {
             preparedStatement.setString(1, lecturerNumber);
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
-                log("Server> Successfully Gotten Password For Lecturer: " + lecturerNumber);
+                log("Server> Successfully Gotten Password For ClassLecturer: " + lecturerNumber);
                 return rs.getString("Password");
             } else {
-                log("Server> Failed To Get Password For Lecturer: " + lecturerNumber);
+                log("Server> Failed To Get Password For ClassLecturer: " + lecturerNumber);
                 return null;
             }
         } catch (SQLException ex) {
@@ -492,7 +563,7 @@ public class DatabaseHandler {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Lecturer SET Password = ? WHERE LecturerNumber = ?;");
             preparedStatement.setString(1, newPassword);
             preparedStatement.setString(2, lecturerNumber);
-            log("Server> Successfully Changed Password For Lecturer: " + lecturerNumber);
+            log("Server> Successfully Changed Password For ClassLecturer: " + lecturerNumber);
             return preparedStatement.execute();
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -507,10 +578,10 @@ public class DatabaseHandler {
             preparedStatement.setString(1, email);
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
-                log("Server> Successfully Emailed Password For Lecturer: " + lecturerNumber);
+                log("Server> Successfully Emailed Password For ClassLecturer: " + lecturerNumber);
                 return mail.emailPassword(rs.getString("LecturerNumber"), email, rs.getString("Password"));
             } else {
-                log("Server> Failed To Email Password For Lecturer: " + lecturerNumber);
+                log("Server> Failed To Email Password For ClassLecturer: " + lecturerNumber);
                 return false;
             }
         } catch (SQLException ex) {
@@ -520,7 +591,7 @@ public class DatabaseHandler {
         }
     }
 
-    public List<String> getStudentsInClass(int classID){
+    public List<String> getStudentsInClass(int classID) {
         List<String> students = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT StudentNumber FROM Student, Registered WHERE Student.StudentNumber = Registered.StudentNumber AND Registered.ClassID = ?");
@@ -538,12 +609,12 @@ public class DatabaseHandler {
         }
     }
 
-    public Admin getAdmin(){
+    public Admin getAdmin() {
 
         return new Admin();//TODO
     }
 
-    public Boolean addStudent(String studentNumber, String campus, String qualification, String firstName, String lastName, String email, String contactNumber){
+    public Boolean addStudent(String studentNumber, String campus, String qualification, String firstName, String lastName, String email, String contactNumber) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Student (StudentNumber, Campus, Qualification, FirstName, LastName, Password, Email, ContactNumber, AssignedPassword) VALUES (?,?,?,?,?,?,?,?,?);");
             preparedStatement.setString(1, studentNumber);
@@ -564,7 +635,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean addLecturer(String lecturerNumber, String campus, String firstName, String lastName, String email, String contactNumber){
+    public Boolean addLecturer(String lecturerNumber, String campus, String firstName, String lastName, String email, String contactNumber) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Lecturer (LecturerNumber, Campus, FirstName, LastName, Password, Email, ContactNumber) VALUES (?,?,?,?,?,?,?);");
             preparedStatement.setString(1, lecturerNumber);
@@ -574,7 +645,7 @@ public class DatabaseHandler {
             preparedStatement.setString(5, "password");
             preparedStatement.setString(6, email);
             preparedStatement.setString(7, contactNumber);
-            log("Admin> Successfully Added Lecturer: " + lecturerNumber);
+            log("Admin> Successfully Added ClassLecturer: " + lecturerNumber);
             return preparedStatement.execute();
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -583,7 +654,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean addAdmin(String username, String password){
+    public Boolean addAdmin(String username, String password) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Admin (Username, Pasword) VALUES (?,?);");
             preparedStatement.setString(1, username);
@@ -597,7 +668,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean addClass(String moduleName, String moduleNumber, String lecturerNumber){
+    public Boolean addClass(String moduleName, String moduleNumber, String lecturerNumber) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Class (ModuleName, ModuleNumber, LecturerNumber) VALUES (?,?,?);");
             preparedStatement.setString(1, moduleName);
@@ -612,7 +683,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean addClassTime(int classID, String roomNumber, int dayOfWeek, int startSlot, int endSlot){
+    public Boolean addClassTime(int classID, String roomNumber, int dayOfWeek, int startSlot, int endSlot) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO ClassTime (ClassID, RoomNumber, DayOfWeek, StartSlot, EndSlot) VALUES (?,?,?,?,?);");
             preparedStatement.setInt(1, classID);
@@ -629,7 +700,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean addResultTemplate(int classID, int resultMax, int dpWeight, int finalWeight, String resultName){
+    public Boolean addResultTemplate(int classID, int resultMax, int dpWeight, int finalWeight, String resultName) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO ResultTemplate (ClassID, ResultMax, DPWeight, FinalWeight, ResultName) VALUES (?,?,?,?,?);");
             preparedStatement.setInt(1, classID);
@@ -646,7 +717,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean addResult(int resultTemplateID, String studentNumber, int result){
+    public Boolean addResult(int resultTemplateID, String studentNumber, int result) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Result (ResultTemplateID, StudentNumber, Result) VALUES (?,?,?);");
             preparedStatement.setInt(1, resultTemplateID);
@@ -661,7 +732,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean addNotice(String heading, String description, String expiryDate, String tag){
+    public Boolean addNotice(String heading, String description, String expiryDate, String tag) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO NoticeBoard (Heading, Description, ExpiryDate, Tag) VALUES (?,?,?,?);");
             preparedStatement.setString(1, heading);
@@ -677,7 +748,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean registerStudentForClass(String studentNumber, int classID){
+    public Boolean registerStudentForClass(String studentNumber, int classID) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Registered (StudentNumber, ClassID) VALUES (?,?,);");
             preparedStatement.setString(1, studentNumber);
@@ -691,7 +762,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean addAttendance(int classID, String studentNumber, String aDate, String attendance){
+    public Boolean addAttendance(int classID, String studentNumber, String aDate, String attendance) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Attendance (ClassID, StudentNumber, ADate, Attendance) VALUES (?,?,?,?);");
             preparedStatement.setInt(1, classID);
@@ -707,7 +778,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateStudent(String newStudentNumber, String campus, String qualification, String firstName, String lastName, String password, String email, String contactNumber, String oldStudentNumber){
+    public Boolean updateStudent(String newStudentNumber, String campus, String qualification, String firstName, String lastName, String password, String email, String contactNumber, String oldStudentNumber) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Student SET StudentNumber = ? AND Campus = ? AND Qualification = ? AND FirstName = ? AND LastName = ? AND Password = ? AND Email = ? AND ContactNumber = ? WHERE StudentNumber = ?;");
             preparedStatement.setString(1, newStudentNumber);
@@ -728,7 +799,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateLecturer(String newLecturerNumber, String campus, String firstName, String lastName, String password, String email, String contactNumber, String oldLecturerNumber){
+    public Boolean updateLecturer(String newLecturerNumber, String campus, String firstName, String lastName, String password, String email, String contactNumber, String oldLecturerNumber) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Lecturer SET LecturerNumber = ? AND Campus = ? AND FirstName = ? AND LastName = ? AND Password = ? AND Email = ? AND ContactNumber = ? WHERE LecturerNumber = ?;");
             preparedStatement.setString(1, newLecturerNumber);
@@ -739,7 +810,7 @@ public class DatabaseHandler {
             preparedStatement.setString(6, email);
             preparedStatement.setString(7, contactNumber);
             preparedStatement.setString(8, oldLecturerNumber);
-            log("Admin> Successfully Updated Lecturer: " + oldLecturerNumber);
+            log("Admin> Successfully Updated ClassLecturer: " + oldLecturerNumber);
             return preparedStatement.executeQuery().next();
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -748,7 +819,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateClass(int newClassID, String moduleName, String moduleNumber, String lecturerNumber, int oldClassID){
+    public Boolean updateClass(int newClassID, String moduleName, String moduleNumber, String lecturerNumber, int oldClassID) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Class SET ClassID = ? AND ModuleName = ? AND ModuleNumber = ? AND LecturerNumber = ? WHERE ClassID = ?;");
             preparedStatement.setInt(1, newClassID);
@@ -765,7 +836,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateClassTime(int newClassTimeID, int classID, String roomNumber, int dayOfWeek, int startSlot, int endSlot, int oldClassTimeID){
+    public Boolean updateClassTime(int newClassTimeID, int classID, String roomNumber, int dayOfWeek, int startSlot, int endSlot, int oldClassTimeID) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE ClassTime SET ClassTimeID = ? AND ClassID = ? AND RommNumber = ? AND DayOfWeek = ? AND StartSlot = ? AND EndSlot = ? WHERE ClassTime = ?;");
             preparedStatement.setInt(1, newClassTimeID);
@@ -784,7 +855,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateResultTemplate(int newResultTemplateID, int classID, int resultMax, int dpWeight, int finalWeight, String resultName, int oldResultTemplateID){
+    public Boolean updateResultTemplate(int newResultTemplateID, int classID, int resultMax, int dpWeight, int finalWeight, String resultName, int oldResultTemplateID) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE ResultTemplate SET ResultTemplateID = ? AND ClassID = ? AND ResultMax = ? AND DPWeight = ? AND FinalWeight = ? AND ResultName = ? WHERE ResultTemplateID = ?;");
             preparedStatement.setInt(1, newResultTemplateID);
@@ -803,7 +874,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateResult(int newResultID, int resultTemplateID, String studentNumber, int result, int oldResultID){
+    public Boolean updateResult(int newResultID, int resultTemplateID, String studentNumber, int result, int oldResultID) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Result SET ResultID = ? AND ResultTemplateID = ? AND StudentNumber = ? AND Result = ? WHERE ResultID = ?;");
             preparedStatement.setInt(1, newResultID);
@@ -820,7 +891,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateNotice(int newNoticeBoardID, String heading, String description, String expiryDate, String tag, int oldNoticeBoardID){
+    public Boolean updateNotice(int newNoticeBoardID, String heading, String description, String expiryDate, String tag, int oldNoticeBoardID) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE NoticeBoard SET NoticeBoardID = ? AND Heading = ? AND Description = ? AND ExpiryDate = ? AND Tag = ? WHERE NoticeBoardID = ?;");
             preparedStatement.setInt(1, newNoticeBoardID);
@@ -838,7 +909,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean updateAttendance(int newAttendanceID, int classID, String studentNumber, String aDate, String attendance, int oldAttendanceID){
+    public Boolean updateAttendance(int newAttendanceID, int classID, String studentNumber, String aDate, String attendance, int oldAttendanceID) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Attendance SET AttendanceID = ? AND ClassID = ? AND StudentNumber = ? AND ADate = ? AND Attendance = ? WHERE AttendanceID = ?;");
             preparedStatement.setInt(1, newAttendanceID);
@@ -856,7 +927,7 @@ public class DatabaseHandler {
         }
     }
 
-    public Boolean removeStudentFromClass(String studentNumber, int classID){
+    public Boolean removeStudentFromClass(String studentNumber, int classID) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("DELETE FROM Registered WHERE StudentNumber = ? AND ClassID = ?;");
             preparedStatement.setString(1, studentNumber);
@@ -869,7 +940,6 @@ public class DatabaseHandler {
             return false;
         }
     }
-
 
 
     public void log(String logDetails) {

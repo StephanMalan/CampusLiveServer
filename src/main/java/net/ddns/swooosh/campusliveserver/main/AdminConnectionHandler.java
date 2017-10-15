@@ -1,19 +1,16 @@
 package net.ddns.swooosh.campusliveserver.main;
 
-import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import models.*;
-import java.io.File;
+import models.admin.Admin;
+
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.nio.file.Files;
-import java.util.Arrays;
 
 public class AdminConnectionHandler extends ConnectionHandler implements Runnable {
 
