@@ -9,18 +9,26 @@ import java.io.Serializable;
 
 public class ContactDetails implements Serializable {
 
+    private int id;
     private String name;
     private String position;
+    private String department;
     private String contactNumber;
     private String email;
     private byte[] imageBytes;
 
-    public ContactDetails(String name, String position, String contactNumber, String email, byte[] imageBytes) {
+    public ContactDetails(int id, String name, String position, String department, String contactNumber, String email, byte[] imageBytes) {
+        this.id = id;
         this.name = name;
         this.position = position;
+        this.department = department;
         this.contactNumber = contactNumber;
         this.email = email;
         this.imageBytes = imageBytes;
+    }
+
+    public int getId() {
+        return id;
     }
 
     public String getName() {
@@ -29,6 +37,10 @@ public class ContactDetails implements Serializable {
 
     public String getPosition() {
         return position;
+    }
+
+    public String getDepartment() {
+        return department;
     }
 
     public String getContactNumber() {

@@ -4,16 +4,22 @@ import java.io.Serializable;
 
 public class Notice implements Serializable{
 
+    private int id;
     private String heading;
     private String description;
     private String tag;
     private String expiryDate;
 
-    public Notice(String heading, String description, String tag, String expiryDate) {
+    public Notice(int id, String heading, String description, String tag, String expiryDate) {
+        this.id = id;
         this.heading = heading;
         this.description = description;
         this.tag = tag;
         this.expiryDate = expiryDate;
+    }
+
+    public int getId() {
+        return id;
     }
 
     public String getHeading() {

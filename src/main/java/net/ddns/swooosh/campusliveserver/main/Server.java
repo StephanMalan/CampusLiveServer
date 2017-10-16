@@ -5,7 +5,6 @@ import javafx.collections.ObservableList;
 
 import javax.net.ssl.SSLServerSocketFactory;
 import java.io.File;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
@@ -20,7 +19,7 @@ public class Server {
     static final File DATABASE_FILE = new File(APPLICATION_FOLDER.getAbsolutePath() + "/CampusLiveDB.db");
     static final File LOG_FILE = new File(APPLICATION_FOLDER.getAbsolutePath() + "/CampusLiveLogFile.txt");
     static final int BUFFER_SIZE = 4194304;
-    private ObservableList<ConnectionHandler> connectionsList = FXCollections.observableArrayList();
+    public static ObservableList<ConnectionHandler> connectionsList = FXCollections.observableArrayList();
     public static final int PORT = 25760;
     public static final int MAX_CONNECTIONS = 500;
     public static final String DROPBOX_LOGIN = "username";
@@ -30,8 +29,18 @@ public class Server {
     public Server() {
         if (!FILES_FOLDER.exists()) {
             FILES_FOLDER.mkdirs();
-            dh.log("Server> Local Folders Created");
-            System.out.println("Server> Local Folders Created");
+            dh.log("Server> Local Files Folder Created");
+            System.out.println("Server> Local Files Folder Created");
+        }
+        if(!LECTURER_IMAGES.exists()) {
+            LECTURER_IMAGES.mkdirs();
+            dh.log("Server> Local Lecturer Images Folders Created");
+            System.out.println("Server> Local Lecturer Images Folders Created");
+        }
+        if(!CONTACT_IMAGES.exists()) {
+            CONTACT_IMAGES.mkdirs();
+            dh.log("Server> Local Contact Images Folder Created");
+            System.out.println("Server> Local Contact Images Folder Created");
         }
         new ClientListener().start();
     }
@@ -40,12 +49,12 @@ public class Server {
         @Override
         public void run() {
             try {
-                dh.log("Server> Trying to set up lecturer on port " + PORT);
-                System.out.println("Server> Trying to set up lecturer on port " + PORT);
+                dh.log("Server> Trying to set up client on port " + PORT);
+                System.out.println("Server> Trying to set up client on port " + PORT);
                 System.setProperty("javax.net.ssl.keyStore", APPLICATION_FOLDER.getAbsolutePath() + "/campuslive.store");
                 System.setProperty("javax.net.ssl.keyStorePassword", "campuslivepassword1");
-                dh.log("Server> Set up lecturer on port " + PORT);
-                System.out.println("Server> Set up lecturer on port " + PORT);
+                dh.log("Server> Set up client on port " + PORT);
+                System.out.println("Server> Set up client on port " + PORT);
                 ServerSocket ss = SSLServerSocketFactory.getDefault().createServerSocket(PORT);
                 while (true) {
                     while (connectionsList.size() <= MAX_CONNECTIONS) {
@@ -83,11 +92,11 @@ public class Server {
                 while (true) {
                     String input;
                     while ((input = objectInputStream.readUTF()) == null) ;
-                    if (input.startsWith("sa:")) {
-                        dh.log("Server> Authorising Student : " + input.substring(3).split(":")[0]);
-                        if (authoriseStudent(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
-                            dh.log("Server> Authorisied Student : " + input.substring(3).split(":")[0]);
-                            objectOutputStream.writeObject("sa:y");
+                    if (input.startsWith("saf:")) {
+                        dh.log("Server> Authorising Student : " + input.substring(4).split(":")[0]);
+                        if (authoriseStudent(input.substring(4).split(":")[0], input.substring(4).split(":")[1])) {
+                            dh.log("Server> Authorisied Student : " + input.substring(4).split(":")[0]);
+                            objectOutputStream.writeObject("saf:y");
                             objectOutputStream.flush();
                             StudentConnectionHandler studentConnectionHandler = new StudentConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(3).split(":")[0], connectionsList);
                             Thread t = new Thread(studentConnectionHandler);
@@ -96,32 +105,32 @@ public class Server {
                             break StopClass;
                         } else {
                             dh.log("Server> Authorising Student : " + input.substring(3).split(":")[0] + " Failed");
-                            objectOutputStream.writeObject("sa:n");
+                            objectOutputStream.writeObject("saf:n");
                             objectOutputStream.flush();
                         }
-                    } else if (input.startsWith("sao:")) {
+                    } else if (input.startsWith("san:")) {
                         dh.log("Server> Authorising Student Off-Campus: " + input.substring(3).split(":")[0]);
                         if (authoriseStudent(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
                             dh.log("Server> Authorised Student Off-Campus: " + input.substring(3).split(":")[0]);
-                            objectOutputStream.writeObject("sao:y");
+                            objectOutputStream.writeObject("san:y");
                             objectOutputStream.flush();
 
                             //DropBox Details
 
                             /*StudentConnectionHandler studentConnectionHandler = new StudentConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(3).split(":")[0], connectionsList);
                             Thread t = new Thread(studentConnectionHandler);
-                            t.start();*
+                            t.start();
                             connectionsList.add(studentConnectionHandler);*/
                             break StopClass;
                         } else {
                             dh.log("Server> Authorising Student : " + input.substring(3).split(":")[0] + " Failed");
-                            objectOutputStream.writeObject("sao:n");
+                            objectOutputStream.writeObject("san:n");
                             objectOutputStream.flush();
                         }
                     } else if (input.startsWith("la:")) {
-                        dh.log("Server> Authorising ClassLecturer : " + input.substring(3).split(":")[0]);
+                        dh.log("Server> Authorising Lecturer : " + input.substring(3).split(":")[0]);
                         if (authoriseLecturer(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
-                            dh.log("Server> Authorised ClassLecturer : " + input.substring(3).split(":")[0]);
+                            dh.log("Server> Authorised Lecturer : " + input.substring(3).split(":")[0]);
                             objectOutputStream.writeObject("la:y");
                             objectOutputStream.flush();
                             LecturerConnectionHandler lecturerConnectionHandler = new LecturerConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(3).split(":")[0], connectionsList);
@@ -130,7 +139,7 @@ public class Server {
                             connectionsList.add(lecturerConnectionHandler);
                             break StopClass;
                         } else {
-                            dh.log("Server> Authorising ClassLecturer : " + input.substring(3).split(":")[0] + " Failed");
+                            dh.log("Server> Authorising Lecturer : " + input.substring(3).split(":")[0] + " Failed");
                             objectOutputStream.writeObject("la:n");
                             objectOutputStream.flush();
                         }

@@ -7,12 +7,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import models.all.ContactDetails;
-import models.all.FilePart;
-import models.all.ImportantDate;
-import models.all.Notice;
-import models.student.ClassLecturer;
-import models.all.Notification;
+import models.all.*;
 
 import java.io.File;
 import java.io.ObjectInputStream;
@@ -27,8 +22,8 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     private Socket socket;
     private ObjectInputStream objectInputStream;
     private ObjectOutputStream objectOutputStream;
-    private String lecturerID;
-    private ObjectProperty<ClassLecturer> lecturer = new SimpleObjectProperty<>();
+    private String lecturerNumber;
+    private ObjectProperty<Lecturer> lecturer = new SimpleObjectProperty<>();
     private ObservableList<ConnectionHandler> connectionsList;
     private ObservableList<Notice> notices = FXCollections.observableArrayList();
     private ObservableList<Notification> notifications = FXCollections.observableArrayList();
@@ -37,17 +32,16 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     public volatile ObservableList<Object> outputQueue = FXCollections.observableArrayList();
     public volatile BooleanProperty updateLecturer = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateNotices = new SimpleBooleanProperty(false);
-    public volatile BooleanProperty updateNotifications = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateContactDetails = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateImportantDates = new SimpleBooleanProperty(false);
     public volatile BooleanProperty running = new SimpleBooleanProperty(true);
     private DatabaseHandler dh = new DatabaseHandler();
 
-    public LecturerConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String lecturerID, ObservableList<ConnectionHandler> connectionsList) {
+    public LecturerConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String lecturerNumber, ObservableList<ConnectionHandler> connectionsList) {
         this.socket = socket;
         this.objectInputStream = objectInputStream;
         this.objectOutputStream = objectOutputStream;
-        this.lecturerID = lecturerID;
+        this.lecturerNumber = lecturerNumber;
         this.connectionsList = connectionsList;
     }
 
@@ -61,12 +55,6 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
         updateNotices.addListener((obs, oldV, newV) -> {
             if (newV) {
                 updateNotices();
-                updateLecturer.set(false);
-            }
-        });
-        updateNotifications.addListener((obs, oldV, newV) -> {
-            if (newV) {
-                updateNotifications();
                 updateLecturer.set(false);
             }
         });
@@ -93,6 +81,8 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
         updateLecturer();
         updateNotices();
         updateNotifications();
+        updateContactDetails();
+        updateImportantDates();
         new InputProcessor().start();
         new OutputProcessor().start();
     }
@@ -153,9 +143,9 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
         }
     }
 
-    public String getReply() {
+    public Object getReply() {
         try {
-            String input;
+            Object input;
             System.out.println("Waiting for reply...");
             synchronized (objectInputStream) {
                 while ((input = objectInputStream.readUTF()) == null) ;
@@ -173,7 +163,7 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     }
 
     private void forgotPassword(String email) {
-        if (dh.emailLecturerPassword(email, lecturerID)) {
+        if (dh.emailLecturerPassword(email, lecturerNumber)) {
             outputQueue.add(0, "fp:y");
         } else {
             outputQueue.add(0, "fp:n");
@@ -181,17 +171,21 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     }
 
     private void changePassword(String prevPassword, String newPassword) {
-        String sPassword = dh.getLecturerPassword(lecturerID);
+        String sPassword = dh.getLecturerPassword(lecturerNumber);
         if (prevPassword.matches(sPassword)) {
-            dh.changePasswordLecturer(lecturerID, newPassword);
+            dh.changeLecturerPassword(lecturerNumber, newPassword);
             outputQueue.add(0, "cp:y");
         } else {
             outputQueue.add(0, "cp:n");
         }
     }
 
-    public String getLecturerID() {
-        return lecturerID;
+    public String getLecturerNumber() {
+        return lecturerNumber;
+    }
+
+    public Lecturer getLecturer(){
+        return lecturer.getValue();
     }
 
     private void getFile(String classID, String fileName) {
@@ -212,12 +206,68 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     }
 
     private void uploadFile(String classID, String fileName) {
-        //TODO
+        //new FileDownloader() TODO
         updateStudents(classID);
         updateLecturer.setValue(true);
     }
 
-    private boolean updateStudents(String classID) {
+    /*public class FileDownloader extends Thread {
+
+        public volatile IntegerProperty size;
+        public volatile DoubleProperty progress;
+        byte[] bytes;
+
+        public FileDownloader(String classID, String fileName) {
+            this.file = file;
+            bytes = new byte[file.getFileLength()];
+            size = new SimpleIntegerProperty(0);
+            progress = new SimpleDoubleProperty(0);
+        }
+
+        @Override
+        public void run() {
+            Done:
+            while (true) {
+                FilePart filePartToRemove = null;
+                BreakSearch:
+                for (int i = inputQueue.size() - 1; i > -1; i--) {
+                    try {
+                        Object object = inputQueue.get(i);
+                        if (object instanceof FilePart) {
+                            FilePart filePart = (FilePart) object;
+                            if (filePart.getClassID() == file.getClassID() && filePart.getFileName().equals(file.getFileName())) {
+                                filePartToRemove = filePart;
+                                break BreakSearch;
+                            }
+                        }
+                    } catch (IndexOutOfBoundsException ex) {
+                    }
+                }
+                if (filePartToRemove != null) {
+                    for (int i = 0; i < filePartToRemove.getFileBytes().length; i++) {
+                        bytes[size.get() + i] = filePartToRemove.getFileBytes()[i];
+                    }
+                    size.set(size.get() + filePartToRemove.getFileBytes().length);
+                    progress.set(1D * size.get() / bytes.length);
+                    inputQueue.remove(filePartToRemove);
+                }
+                if (size.get() == file.getFileLength()) {
+                    System.out.println("File successfully downloaded!");
+                    File f = new File(Server.FILES_FOLDER + "/" + file.getClassID() + "/" + file.getFileName());
+                    f.getParentFile().mkdirs();
+                    try {
+                        Files.write(f.toPath(), bytes);
+                        updateSavedFiles();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                    break Done;
+                }
+            }
+        }
+    }*/
+
+    private Boolean updateStudents(String classID) {
         List<String> students = dh.getStudentsInClass(Integer.parseInt(classID));
         for (ConnectionHandler ch : connectionsList) {
             if (ch instanceof StudentConnectionHandler) {
@@ -233,23 +283,24 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     }
 
     private void updateLecturer() {
-        //lecturer.setValue(dh.getClassLecturer(lecturerID));
+        lecturer.setValue(dh.getLecturer(lecturerNumber));
     }
 
     private void updateNotices() {
-        notices.addAll(dh.getNotices(lecturerID, "ClassLecturer"));
+        notices.addAll(dh.getNotices(lecturerNumber, "ClassLecturer"));
     }
 
     private void updateNotifications() {
-        notifications.addAll(dh.getNotifications(lecturerID, "ClassLecturer"));
+        notifications.addAll(dh.getNotifications(lecturerNumber, "ClassLecturer"));
     }
 
     private void updateContactDetails() {
-        contactDetails.addAll(dh.getContactDetails(lecturerID));
+        contactDetails.addAll(dh.getContactDetails());
+        contactDetails.addAll(dh.getStudentContactDetails(lecturerNumber));
     }
 
     private void updateImportantDates() {
-        importantDates.addAll(dh.getImportantDates(lecturerID));
+        importantDates.addAll(dh.getImportantDates());
     }
 
     private void terminateConnection() {

@@ -110,35 +110,38 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     private class InputProcessor extends Thread {
         public void run() {
             while (running.get()) {
-                String input;
+                Object input;
                 if ((input = getReply()) != null) {
-                    if (input.startsWith("lo:")) {
-                        dh.log("Student " + studentNumber + "> Requested ClassLecturer Online");
-                        if (isLecturerOnline(input.substring(3))) {
-                            outputQueue.add(0, "lo:y");
-                        } else {
-                            outputQueue.add(0, "lo:n");
-                        }
-                    } else if (input.startsWith("cp:")) {
-                        dh.log("Student " + studentNumber + "> Requested Change Password");
-                        changePassword(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
-                    } else if (input.startsWith("sm:")) {
-                        dh.log("Student " + studentNumber + "> Send Direct Message to ClassLecturer: " + input.substring(3).split(":")[1] + "> " + input.substring(3).split(":")[0]);
-                        sendMessage(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
-                    } else if (input.startsWith("fp:")) {
-                        dh.log("Student " + studentNumber + "> Requested Forgot Password");
-                        forgotPassword(input.substring(3));
-                    } else if (input.startsWith("gf:")) {
-                        dh.log("Student " + studentNumber + "> Requested File: " + input.substring(3).split(":")[1] + " From class: " + input.substring(3).split(":")[0]);
-                        getFile(input.substring(3).split(":")[0], input.substring(3).split(":")[1]);
-                    } else if (input.startsWith("lgt:")) {
-                        terminateConnection();
-                    } else if (input.startsWith("dn:")) {
+                    if(input instanceof String) {
+                        String text = input.toString();
+                        if (text.startsWith("lo:")) {
+                            dh.log("Student " + studentNumber + "> Requested ClassLecturer Online");
+                            if (isLecturerOnline(text.substring(3))) {
+                                outputQueue.add(0, "lo:y");
+                            } else {
+                                outputQueue.add(0, "lo:n");
+                            }
+                        } else if (text.startsWith("cp:")) {
+                            dh.log("Student " + studentNumber + "> Requested Change Password");
+                            changePassword(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
+                        } else if (text.startsWith("sm:")) {
+                            dh.log("Student " + studentNumber + "> Send Direct Message to ClassLecturer: " + text.substring(3).split(":")[1] + "> " + text.substring(3).split(":")[0]);
+                            sendMessage(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
+                        } else if (text.startsWith("fp:")) {
+                            dh.log("Student " + studentNumber + "> Requested Forgot Password");
+                            forgotPassword(text.substring(3));
+                        } else if (text.startsWith("gf:")) {
+                            dh.log("Student " + studentNumber + "> Requested File: " + text.substring(3).split(":")[1] + " From class: " + text.substring(3).split(":")[0]);
+                            getFile(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
+                        } else if (text.startsWith("lgt:")) {
+                            terminateConnection();
+                        } else if (text.startsWith("dn:")) {
 
-                    } else {
-                        dh.log("Student " + studentNumber + "> Requested Unknown Command: " + input);
-                        System.out.println("Server> Unknown command: " + input);
-                    }
+                        } else {
+                            dh.log("Student " + studentNumber + "> Requested Unknown Command: " + input);
+                            System.out.println("Server> Unknown command: " + input);
+                        }
+                    }else{}//Object instance of
                 }
             }
         }
@@ -178,9 +181,9 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         }
     }
 
-    public String getReply() {
+    public Object getReply() {
         try {
-            String input;
+            Object input;
             System.out.println("Server> Waiting for reply...");
             synchronized (objectInputStream) {
                 while ((input = objectInputStream.readUTF()) == null) ;
@@ -197,7 +200,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     private boolean isLecturerOnline(String lecturerNumber) {
         for (ConnectionHandler ch : connectionsList) {
             if (ch instanceof LecturerConnectionHandler) {
-                if (((LecturerConnectionHandler) ch).getLecturerID().matches(lecturerNumber)) {
+                if (((LecturerConnectionHandler) ch).getLecturerNumber().matches(lecturerNumber)) {
                     return true;
                 }
             }
@@ -219,7 +222,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         if (isLecturerOnline(lecturerNumber)) {
             for (ConnectionHandler ch : connectionsList) {
                 if (ch instanceof LecturerConnectionHandler) {
-                    if (((LecturerConnectionHandler) ch).getLecturerID().matches(lecturerNumber)) {
+                    if (((LecturerConnectionHandler) ch).getLecturerNumber().matches(lecturerNumber)) {
                         ((LecturerConnectionHandler) ch).addMessage(message, studentNumber);
                     }
                 }
@@ -254,6 +257,14 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         }
     }
 
+    public Student getStudent(){
+        return student.getValue();
+    }
+
+    public String getQualification (){
+        return student.getValue().getQualification();
+    }
+
     private void updateStudent() {
         student.setValue(dh.getStudent(studentNumber));
     }
@@ -267,11 +278,11 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     }
 
     private void updateContactDetails() {
-        contactDetails.addAll(dh.getContactDetails(studentNumber));
+        contactDetails.addAll(dh.getContactDetails());
     }
 
     private void updateImportantDates() {
-        importantDates.addAll(dh.getImportantDates(studentNumber));
+        importantDates.addAll(dh.getImportantDates());
     }
 
     public String getStudentNumber() {

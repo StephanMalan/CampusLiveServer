@@ -4,18 +4,30 @@ import java.io.Serializable;
 
 public class Result implements Serializable {
 
+    private int id;
+    private int resultTemplateID;
     private String resultName;
     private Double result;
     private Double resultMax;
     private Double dpWeight;
     private Double finalWeight;
 
-    public Result(String resultName, Double result, Double resultMax, Double dpWeight, Double finalWeight) {
+    public Result(int id, int resultTemplateID, String resultName, Double result, Double resultMax, Double dpWeight, Double finalWeight) {
+        this.id = id;
+        this.resultTemplateID = resultTemplateID;
         this.resultName = resultName;
         this.result = result;
         this.resultMax = resultMax;
         this.dpWeight = dpWeight;
         this.finalWeight = finalWeight;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public int getResultTemplateID() {
+        return resultTemplateID;
     }
 
     public String getResultName() {
