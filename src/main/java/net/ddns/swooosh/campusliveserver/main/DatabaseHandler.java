@@ -6,6 +6,10 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 import models.admin.*;
 import models.all.*;
+import models.lecturer.LecturerStudentAttendance;
+import models.lecturer.LecturerStudentAttendanceClass;
+import models.lecturer.LecturerStudentResult;
+import models.lecturer.LecturerStudentResultClass;
 import models.student.*;
 
 import javax.imageio.ImageIO;
@@ -214,7 +218,7 @@ public class DatabaseHandler {
             preparedStatement.setInt(2, classID);
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
-                results.add(new Result(rs.getInt("ResultID"), rs.getInt("ResultTemplateID"), rs.getString("ResultName"), rs.getDouble("Result"), rs.getDouble("ResultMax"), rs.getDouble("DPWeight"), rs.getDouble("FinalWeight")));
+                results.add(new Result(rs.getInt("ResultTemplateID"), rs.getString("StudentNumber"), rs.getString("ResultName"), rs.getInt("Result"), rs.getInt("ResultMax"), rs.getInt("DPWeight"), rs.getInt("FinalWeight")));
             }
             log("Server> Successfully Created Results For Student: " + studentNumber);
             return results;
@@ -559,7 +563,7 @@ public class DatabaseHandler {
                 ResultSet rs = preparedStatement.executeQuery();
                 while (rs.next()) {
                     ContactDetails newContactDetail = new ContactDetails(0, rs.getString("FirstName") + " " + rs.getString("LastName"), rs.getString("Student.StudentNumber"), "Student", rs.getString("ContactNumber"), rs.getString("Email"), null);//TODO send null bytes
-                    if(!contactDetails.contains(newContactDetail)) {
+                    if (!contactDetails.contains(newContactDetail)) {
                         contactDetails.add(newContactDetail);
                     }
                 }
@@ -752,13 +756,42 @@ public class DatabaseHandler {
             preparedStatement.setInt(3, dpWeight);
             preparedStatement.setInt(4, finalWeight);
             preparedStatement.setString(5, resultName);
-            log("Admin> Successfully Added ResultTemplate: " + resultName + " For ClassID: " + classID);
             preparedStatement.execute();
-            notifyUpdatedClass(classID);
+            if(!resultName.matches("SupplementaryExam")) {//TODO String correct
+                preparedStatement = con.prepareStatement("SELECT ResultTeemplateID FROM ResultTemplate WHERE ClassID = ? AND ResultMax = ? AND DPWeight = ? AND FinalWeight = ? AND ResultName = ?;");
+                preparedStatement.setInt(1, classID);
+                preparedStatement.setInt(2, resultMax);
+                preparedStatement.setInt(3, dpWeight);
+                preparedStatement.setInt(4, finalWeight);
+                preparedStatement.setString(5, resultName);
+                ResultSet rs = preparedStatement.executeQuery();
+                addResultForClass(classID, rs.getInt("ResultTemplateID"));
+                notifyUpdatedClass(classID);
+            }
             return true;
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> addResultTemplate> " + ex);
+            return false;
+        }
+    }
+
+    private Boolean addResultForClass(int classID, int resultTemplateID){
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Registered WHERE ClassID = ?;");
+            preparedStatement.setInt(1, classID);
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()){
+                PreparedStatement preparedStatement2 = con.prepareStatement("INSERT INTO Result (ResultTemplateID, StudentNumber, Result) VALUES (?,?,?);");
+                preparedStatement2.setInt(1, rs.getInt("ResultTemplateID"));
+                preparedStatement2.setString(2, rs.getString("StudentNumber"));
+                preparedStatement2.setInt(3, -1);
+                preparedStatement2.execute();
+            }
+            return true;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            log("Server> registerStudentForClass> " + ex);
             return false;
         }
     }
@@ -800,12 +833,34 @@ public class DatabaseHandler {
 
     private Boolean registerStudentForClass(String studentNumber, int classID) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Registered (StudentNumber, ClassID) VALUES (?,?,);");
+            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Registered (StudentNumber, ClassID) VALUES (?,?);");
             preparedStatement.setString(1, studentNumber);
             preparedStatement.setInt(2, classID);
-            log("Admin> Successfully Registered Student: " + studentNumber + " For Class: " + classID);
             preparedStatement.execute();
+            addRegisterResults(studentNumber, classID);
             notifyUpdatedStudent(studentNumber);
+            return true;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            log("Server> registerStudentForClass> " + ex);
+            return false;
+        }
+    }
+
+    private Boolean addRegisterResults (String studentNumber, int classID) {
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM ResultTemplate WHERE ClassID = ?;");
+            preparedStatement.setInt(1, classID);
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()){
+                if(!rs.getString("ResultName").matches("SupplementaryExam")) {//TODO String correct
+                    PreparedStatement preparedStatement2 = con.prepareStatement("INSERT INTO Result (ResultTemplateID, StudentNumber, Result) VALUES (?,?,?);");
+                    preparedStatement2.setInt(1, rs.getInt("ResultTemplateID"));
+                    preparedStatement2.setString(2, studentNumber);
+                    preparedStatement2.setInt(3, -1);
+                    preparedStatement2.execute();
+                }
+            }
             return true;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -1066,23 +1121,27 @@ public class DatabaseHandler {
     }
 
     public Boolean updateResultTemplate(int resultTemplateID, int classID, int resultMax, int dpWeight, int finalWeight, String resultName) {
-        try {
-            PreparedStatement preparedStatement = con.prepareStatement("UPDATE ResultTemplate SET ResultTemplateID = ? AND ClassID = ? AND ResultMax = ? AND DPWeight = ? AND FinalWeight = ? AND ResultName = ? WHERE ResultTemplateID = ?;");
-            preparedStatement.setInt(1, resultTemplateID);
-            preparedStatement.setInt(2, classID);
-            preparedStatement.setInt(3, resultMax);
-            preparedStatement.setInt(4, dpWeight);
-            preparedStatement.setInt(5, finalWeight);
-            preparedStatement.setString(6, resultName);
-            preparedStatement.setInt(7, resultTemplateID);
-            log("Admin> Successfully Updated ResultTemplate: ");
-            preparedStatement.executeQuery().next();
-            notifyUpdatedClass(classID);
-            return true;
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            log("Server> updateResultTemplate> " + ex);
-            return false;
+        if (resultTemplateID > -1) {
+            try {
+                PreparedStatement preparedStatement = con.prepareStatement("UPDATE ResultTemplate SET ResultTemplateID = ? AND ClassID = ? AND ResultMax = ? AND DPWeight = ? AND FinalWeight = ? AND ResultName = ? WHERE ResultTemplateID = ?;");
+                preparedStatement.setInt(1, resultTemplateID);
+                preparedStatement.setInt(2, classID);
+                preparedStatement.setInt(3, resultMax);
+                preparedStatement.setInt(4, dpWeight);
+                preparedStatement.setInt(5, finalWeight);
+                preparedStatement.setString(6, resultName);
+                preparedStatement.setInt(7, resultTemplateID);
+                log("Admin> Successfully Updated ResultTemplate: ");
+                preparedStatement.executeQuery().next();
+                notifyUpdatedClass(classID);
+                return true;
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                log("Server> updateResultTemplate> " + ex);
+                return false;
+            }
+        } else {
+            return addResultTemplate(classID, resultMax, dpWeight, finalWeight, resultName);
         }
     }
 
@@ -1514,12 +1573,12 @@ public class DatabaseHandler {
         }
     }
 
-    public List<Admin> getAllAdmins(){
+    public List<Admin> getAllAdmins() {
         List<Admin> admins = FXCollections.observableArrayList();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Admin;");
             ResultSet rs = preparedStatement.executeQuery();
-            while (rs.next()){
+            while (rs.next()) {
                 admins.add(new Admin(rs.getString("Username")));
             }
             return admins;
@@ -1530,12 +1589,12 @@ public class DatabaseHandler {
         }
     }
 
-    public List<Student> getAllStudents(){
+    public List<Student> getAllStudents() {
         List<Student> students = FXCollections.observableArrayList();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student;");
             ResultSet rs = preparedStatement.executeQuery();
-            while (rs.next()){
+            while (rs.next()) {
                 students.add(getStudent(rs.getString("StudentNumber")));
             }
             return students;
@@ -1546,12 +1605,12 @@ public class DatabaseHandler {
         }
     }
 
-    public List<Lecturer> getAllLecturers(){
+    public List<Lecturer> getAllLecturers() {
         List<Lecturer> lecturers = FXCollections.observableArrayList();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Lecturer;");
             ResultSet rs = preparedStatement.executeQuery();
-            while (rs.next()){
+            while (rs.next()) {
                 lecturers.add(getLecturer(rs.getString("LecturerNumber")));
             }
             return lecturers;
@@ -1562,17 +1621,17 @@ public class DatabaseHandler {
         }
     }
 
-    public List<AdminClass> getAllClasses(){
+    public List<AdminClass> getAllClasses() {
         List<AdminClass> classes = FXCollections.observableArrayList();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Class;");
             ResultSet rs = preparedStatement.executeQuery();
-            while (rs.next()){
+            while (rs.next()) {
                 PreparedStatement preparedStatement2 = con.prepareStatement("SELECT * FROM ClassTime WHERE ClassID = ?;");
                 preparedStatement2.setInt(1, rs.getInt("ClassID"));
-                ResultSet rs2 = preparedStatement.executeQuery();
+                ResultSet rs2 = preparedStatement2.executeQuery();
                 List<ClassTime> classTimes = FXCollections.observableArrayList();
-                while (rs2.next()){
+                while (rs2.next()) {
                     classTimes.add(new ClassTime(rs2.getInt("ClassTimeID"), rs2.getInt("ClassID"), rs2.getString("RoomNumber"), rs2.getInt("DayOfWeek"), rs2.getInt("StartSlot"), rs2.getInt("EndSlot")));
                 }
                 classes.add(new AdminClass(rs.getInt("classID"), rs.getString("ModuleNumber"), rs.getString("ModuleName"), rs.getString("LecturerNumber"), classTimes));
@@ -1585,12 +1644,12 @@ public class DatabaseHandler {
         }
     }
 
-    public List<Notice> getAllNotices(){
+    public List<Notice> getAllNotices() {
         List<Notice> notices = FXCollections.observableArrayList();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Notice;");
             ResultSet rs = preparedStatement.executeQuery();
-            while (rs.next()){
+            while (rs.next()) {
                 notices.add(new Notice(rs.getInt("NoticeID"), rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag"), rs.getString("ExpiryDate")));
             }
             return notices;
@@ -1601,12 +1660,12 @@ public class DatabaseHandler {
         }
     }
 
-    public List<Notification> getAllNotifications(){
+    public List<Notification> getAllNotifications() {
         List<Notification> notifications = FXCollections.observableArrayList();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Notification;");
             ResultSet rs = preparedStatement.executeQuery();
-            while (rs.next()){
+            while (rs.next()) {
                 notifications.add(new Notification(rs.getInt("NoticeID"), rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag")));
             }
             return notifications;
@@ -1615,6 +1674,114 @@ public class DatabaseHandler {
             log("Server> removeStudentFromClass> " + ex);
             return null;
         }
+    }
+
+    public List<LecturerStudentAttendance> getAllStudentsInClassAttendance(String lecturerNumber) {//TODO Test
+        ObservableList<LecturerStudentAttendance> studentsAttendance = FXCollections.observableArrayList();
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student, Registered, Class WHERE Student.StudentNumber = Registered.StudentNumber AND Class.ClassID = Registered.ClassID AND Class.LecturerID = ?;");
+            preparedStatement.setString(1, lecturerNumber);
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()) {
+                List<LecturerStudentAttendanceClass> studentAttendance = getStudentsInClassAttendanceClasses(rs.getString("StudentNumber"), rs.getString("LecturerID"));
+                LecturerStudentAttendance newStudentAttendance = new LecturerStudentAttendance(rs.getString("FirstName"), rs.getString("LastName"), rs.getString("StudentNumber"), studentAttendance);
+                if (!studentsAttendance.contains(newStudentAttendance)) {
+                    studentsAttendance.add(newStudentAttendance);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            log("Server> getNoticeBoards> " + ex);
+            return null;
+        }
+        return studentsAttendance;
+    }
+
+    public List<LecturerStudentAttendanceClass> getStudentsInClassAttendanceClasses(String studentNumber, String lecturerNumber) {
+        ObservableList<LecturerStudentAttendanceClass> studentsInClassAttendanceClasses = FXCollections.observableArrayList();
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Class, Registered WHERE Registered.StudentNumber = ? AND Registered.ClassID = Class.ClassID AND Class.LecturerNumber = ?;");
+            preparedStatement.setString(1, studentNumber);
+            preparedStatement.setString(1, lecturerNumber);
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()) {
+                List<Attendance> studentAttendanceClass = getStudentsInClassAttendanceAttendance(studentNumber, rs.getInt("ClassID"));
+                studentsInClassAttendanceClasses.add(new LecturerStudentAttendanceClass(rs.getInt("ClassID"), studentAttendanceClass));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return studentsInClassAttendanceClasses;
+    }
+
+    private List<Attendance> getStudentsInClassAttendanceAttendance(String studentNumber, int classID) {
+        ObservableList<Attendance> studentsInClassAttendanceAttendance = FXCollections.observableArrayList();
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Attendance WHERE ClassID = ? AND StudentNumber = ?;");
+            preparedStatement.setInt(1, classID);
+            preparedStatement.setString(2, studentNumber);
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()) {
+                studentsInClassAttendanceAttendance.add(new Attendance(rs.getString("ADate"), rs.getString("Attendance")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return studentsInClassAttendanceAttendance;
+    }
+
+    public List<LecturerStudentResult> getAllStudentsInClassResults(String lecturerNumber) {//TODO Test
+        ObservableList<LecturerStudentResult> addStudentsResults = FXCollections.observableArrayList();
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student, Registered, Class WHERE Student.StudentNumber = Registered.StudentNumber AND Class.ClassID = Registered.ClassID AND Class.LecturerID = ?;");
+            preparedStatement.setString(1, lecturerNumber);
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()) {
+                List<LecturerStudentResultClass> studentResults = getStudentsInClassResultsClasses(rs.getString("StudentNumber"), rs.getString("LecturerID"));
+                LecturerStudentResult newStudentResult = new LecturerStudentResult(rs.getString("FirstName"), rs.getString("LastName"), rs.getString("StudentNumber"), studentResults);
+                if (!addStudentsResults.contains(newStudentResult)) {
+                    addStudentsResults.add(newStudentResult);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            log("Server> getNoticeBoards> " + ex);
+            return null;
+        }
+        return addStudentsResults;
+    }
+
+    public List<LecturerStudentResultClass> getStudentsInClassResultsClasses(String studentNumber, String lecturerNumber) {
+        ObservableList<LecturerStudentResultClass> studentsInClassResultsClasses = FXCollections.observableArrayList();
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Class, Registered WHERE Registered.StudentNumber = ? AND Registered.ClassID = Class.ClassID AND Class.LecturerNumber = ?;");
+            preparedStatement.setString(1, studentNumber);
+            preparedStatement.setString(1, lecturerNumber);
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()) {
+                List<Result> studentResultClass = getStudentsInClassResultsResults(studentNumber, rs.getInt("ClassID"));
+                studentsInClassResultsClasses.add(new LecturerStudentResultClass(rs.getInt("ClassID"), studentResultClass));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return studentsInClassResultsClasses;
+    }
+
+    private List<Result> getStudentsInClassResultsResults(String studentNumber, int classID) {
+        ObservableList<Result> studentsInClassResultsResults = FXCollections.observableArrayList();
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Result, ResultTemplate WHERE Result.ResultTemplateID = ResultTemplate.ResultTemplateID AND Result.StudentNumber = ? AND ResultTemplate.ClassID = ?;");
+            preparedStatement.setString(1, studentNumber);
+            preparedStatement.setInt(2, classID);
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()) {
+                studentsInClassResultsResults.add(new Result(rs.getInt("ResultTemplateID"), studentNumber, rs.getString("ResultName"), rs.getInt("Result"), rs.getInt("ResultMax"), rs.getInt("DPWeight"), rs.getInt("FinalWeight")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return studentsInClassResultsResults;
     }
 
 }

@@ -1,15 +1,16 @@
 package net.ddns.swooosh.campusliveserver.main;
 
+import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import models.all.*;
+import models.lecturer.LecturerStudentAttendance;
+import models.lecturer.LecturerStudentResult;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
@@ -29,13 +30,19 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     private ObservableList<Notification> notifications = FXCollections.observableArrayList();
     private ObservableList<ContactDetails> contactDetails = FXCollections.observableArrayList();
     private ObservableList<ImportantDate> importantDates = FXCollections.observableArrayList();
+    private ObservableList<LecturerStudentAttendance> studentAttendance = FXCollections.observableArrayList();
+    private ObservableList<LecturerStudentResult> studentResults = FXCollections.observableArrayList();
     public volatile ObservableList<Object> outputQueue = FXCollections.observableArrayList();
+    public volatile ObservableList<FilePart> downloadQueue = FXCollections.observableArrayList();
     public volatile BooleanProperty updateLecturer = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateNotices = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateContactDetails = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateImportantDates = new SimpleBooleanProperty(false);
+    public volatile BooleanProperty updateStudentAttendance = new SimpleBooleanProperty(false);
+    public volatile BooleanProperty updateStudentResults = new SimpleBooleanProperty(false);
     public volatile BooleanProperty running = new SimpleBooleanProperty(true);
     private DatabaseHandler dh = new DatabaseHandler();
+    //private FileDownloader fileDownloader = new FileDownloader()//TODO where to start
 
     public LecturerConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String lecturerNumber, ObservableList<ConnectionHandler> connectionsList) {
         this.socket = socket;
@@ -70,6 +77,18 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
                 updateLecturer.set(false);
             }
         });
+        updateStudentAttendance.addListener((obs, oldV, newV) -> {
+            if (newV) {
+                updateStudentAttendance();
+                updateStudentAttendance.set(false);
+            }
+        });
+        updateStudentResults.addListener((obs, oldV, newV) -> {
+            if (newV) {
+                updateStudentResults();
+                updateStudentResults.set(false);
+            }
+        });
         lecturer.addListener(e -> {
             outputQueue.add(0, lecturer.get());
         });
@@ -92,7 +111,7 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
             while (running.get()) {
                 Object input;
                 if ((input = getReply()) != null) {
-                    if(input instanceof String) {
+                    if (input instanceof String) {
                         String text = input.toString();
                         if (text.startsWith("cp:")) {
                             changePassword(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
@@ -100,14 +119,15 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
                             forgotPassword(text.substring(3));
                         } else if (text.startsWith("gf:")) {
                             getFile(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
-                        } else if (text.startsWith("uf:")) {
-                            uploadFile(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
                         } else if (text.startsWith("lgt:")) {
                             terminateConnection();
                         } else {
                             System.out.println("Unknown command: " + input);
                         }
-                    }else{}//Object instanceof
+                    } else if (input instanceof FilePart) {
+                        FilePart fp = (FilePart) input;
+                        downloadQueue.add(fp);
+                    }
                 }
             }
         }
@@ -125,6 +145,63 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
                     Thread.sleep(20);
                 } catch (Exception ex) {
                     System.out.println("Server> OutputProcessor> " + ex);
+                }
+            }
+        }
+    }
+
+    public class FileDownloader extends Thread {
+
+        public volatile IntegerProperty size;
+        public volatile DoubleProperty progress;
+        ClassFile file;
+        byte[] bytes;
+
+        public FileDownloader(ClassFile file) {
+            this.file = file;
+            bytes = new byte[file.getFileLength()];
+            size = new SimpleIntegerProperty(0);
+            progress = new SimpleDoubleProperty(0);
+        }
+
+        @Override
+        public void run() {
+            outputQueue.add("gf:" + file.getClassID() + ":" + file.getFileName());
+            Done:
+            while (true) {
+                FilePart filePartToRemove = null;
+                BreakSearch:
+                for (int i = downloadQueue.size() - 1; i > -1; i--) {
+                    try {
+                        Object object = downloadQueue.get(i);
+                        if (object instanceof FilePart) {
+                            FilePart filePart = (FilePart) object;
+                            if (filePart.getClassID() == file.getClassID() && filePart.getFileName().equals(file.getFileName())) {
+                                filePartToRemove = filePart;
+                                break BreakSearch;
+                            }
+                        }
+                    } catch (IndexOutOfBoundsException ex) {
+                    }
+                }
+                if (filePartToRemove != null) {
+                    for (int i = 0; i < filePartToRemove.getFileBytes().length; i++) {
+                        bytes[size.get() + i] = filePartToRemove.getFileBytes()[i];
+                    }
+                    size.set(size.get() + filePartToRemove.getFileBytes().length);
+                    progress.set(1D * size.get() / bytes.length);
+                    downloadQueue.remove(filePartToRemove);
+                }
+                if (size.get() == file.getFileLength()) {
+                    System.out.println("File successfully downloaded!");
+                    File f = new File(Server.FILES_FOLDER + "/" + file.getClassID() + "/" + file.getFileName());
+                    f.getParentFile().mkdirs();
+                    try {
+                        Files.write(f.toPath(), bytes);
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                    break Done;
                 }
             }
         }
@@ -184,7 +261,7 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
         return lecturerNumber;
     }
 
-    public Lecturer getLecturer(){
+    public Lecturer getLecturer() {
         return lecturer.getValue();
     }
 
@@ -211,61 +288,6 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
         updateLecturer.setValue(true);
     }
 
-    /*public class FileDownloader extends Thread {
-
-        public volatile IntegerProperty size;
-        public volatile DoubleProperty progress;
-        byte[] bytes;
-
-        public FileDownloader(String classID, String fileName) {
-            this.file = file;
-            bytes = new byte[file.getFileLength()];
-            size = new SimpleIntegerProperty(0);
-            progress = new SimpleDoubleProperty(0);
-        }
-
-        @Override
-        public void run() {
-            Done:
-            while (true) {
-                FilePart filePartToRemove = null;
-                BreakSearch:
-                for (int i = inputQueue.size() - 1; i > -1; i--) {
-                    try {
-                        Object object = inputQueue.get(i);
-                        if (object instanceof FilePart) {
-                            FilePart filePart = (FilePart) object;
-                            if (filePart.getClassID() == file.getClassID() && filePart.getFileName().equals(file.getFileName())) {
-                                filePartToRemove = filePart;
-                                break BreakSearch;
-                            }
-                        }
-                    } catch (IndexOutOfBoundsException ex) {
-                    }
-                }
-                if (filePartToRemove != null) {
-                    for (int i = 0; i < filePartToRemove.getFileBytes().length; i++) {
-                        bytes[size.get() + i] = filePartToRemove.getFileBytes()[i];
-                    }
-                    size.set(size.get() + filePartToRemove.getFileBytes().length);
-                    progress.set(1D * size.get() / bytes.length);
-                    inputQueue.remove(filePartToRemove);
-                }
-                if (size.get() == file.getFileLength()) {
-                    System.out.println("File successfully downloaded!");
-                    File f = new File(Server.FILES_FOLDER + "/" + file.getClassID() + "/" + file.getFileName());
-                    f.getParentFile().mkdirs();
-                    try {
-                        Files.write(f.toPath(), bytes);
-                        updateSavedFiles();
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
-                    break Done;
-                }
-            }
-        }
-    }*/
 
     private Boolean updateStudents(String classID) {
         List<String> students = dh.getStudentsInClass(Integer.parseInt(classID));
@@ -301,6 +323,14 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
 
     private void updateImportantDates() {
         importantDates.addAll(dh.getImportantDates());
+    }
+
+    private void updateStudentAttendance() {
+        studentAttendance.addAll(dh.getAllStudentsInClassAttendance(lecturerNumber));
+    }
+
+    private void updateStudentResults() {
+        studentResults.addAll(dh.getAllStudentsInClassResults(lecturerNumber));
     }
 
     private void terminateConnection() {

@@ -173,8 +173,12 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                     } else if (input instanceof Notification){
                         Notice uNotice = (Notice) input;
                         dh.updateNotice(uNotice.getId(), uNotice.getHeading(), uNotice.getDescription(), uNotice.getExpiryDate(), uNotice.getTag());
-                    } else if (input instanceof Result){//TODO send string or add studentNumber and templateID 0 if new template and resultID 0 if new result
+                    } else if (input instanceof Result){
                         Result uResult = (Result) input;
+                        dh.updateResult(uResult.getResultTemplateID(), uResult.getStudentNumber(), uResult.getResult());
+                    } else if (input instanceof ResultTemplate){//-1 id = new
+                        ResultTemplate uResultTemplate = (ResultTemplate) input;
+                        dh.updateResultTemplate(uResultTemplate.getId(), uResultTemplate.getClassID(), uResultTemplate.getResultMax(), uResultTemplate.getDpWeight(), uResultTemplate.getFinalWeight(), uResultTemplate.getResultName());
                     } else if(input instanceof ContactDetails){
                         ContactDetails nContactDetails = (ContactDetails) input;
                         dh.updateContactDetails(nContactDetails.getId(), nContactDetails.getName(), nContactDetails.getPosition(), nContactDetails.getDepartment(), nContactDetails.getContactNumber(), nContactDetails.getEmail());
