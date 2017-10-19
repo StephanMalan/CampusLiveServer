@@ -42,14 +42,15 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
     public volatile BooleanProperty updateNotifications = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateImportantDates = new SimpleBooleanProperty(false);
     public volatile BooleanProperty running = new SimpleBooleanProperty(true);
-    private DatabaseHandler dh = new DatabaseHandler();
+    private DatabaseHandler dh;
 
-    public AdminConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String username, ObservableList<ConnectionHandler> connectionsList) {
+    public AdminConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String username, ObservableList<ConnectionHandler> connectionsList, DatabaseHandler dh) {
         this.socket = socket;
         this.objectInputStream = objectInputStream;
         this.objectOutputStream = objectOutputStream;
         this.username = username;
         this.connectionsList = connectionsList;
+        this.dh = dh;
     }
 
     public void run() {
@@ -224,7 +225,6 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
     public Object getReply() {
         try {
             Object input;
-            System.out.println("Waiting for reply...");
             synchronized (objectInputStream) {
                 while ((input = objectInputStream.readUTF()) == null);
             }

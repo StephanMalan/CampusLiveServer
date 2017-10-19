@@ -41,15 +41,16 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     public volatile BooleanProperty updateStudentAttendance = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateStudentResults = new SimpleBooleanProperty(false);
     public volatile BooleanProperty running = new SimpleBooleanProperty(true);
-    private DatabaseHandler dh = new DatabaseHandler();
+    private DatabaseHandler dh;
     //private FileDownloader fileDownloader = new FileDownloader()//TODO where to start
 
-    public LecturerConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String lecturerNumber, ObservableList<ConnectionHandler> connectionsList) {
+    public LecturerConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String lecturerNumber, ObservableList<ConnectionHandler> connectionsList, DatabaseHandler dh) {
         this.socket = socket;
         this.objectInputStream = objectInputStream;
         this.objectOutputStream = objectOutputStream;
         this.lecturerNumber = lecturerNumber;
         this.connectionsList = connectionsList;
+        this.dh = dh;
     }
 
     public void run() {
@@ -223,7 +224,6 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     public Object getReply() {
         try {
             Object input;
-            System.out.println("Waiting for reply...");
             synchronized (objectInputStream) {
                 while ((input = objectInputStream.readUTF()) == null) ;
             }

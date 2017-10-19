@@ -149,7 +149,7 @@ public class DatabaseHandler {
 
     public Boolean authoriseLecturer(String lecturerNumber, String password) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Lecturer WHERE LecturerNumber = ? AND Password = ?");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Lecturer WHERE LecturerID = ? AND Password = ?");
             preparedStatement.setString(1, lecturerNumber);
             preparedStatement.setString(2, password);
             return preparedStatement.executeQuery().next();
@@ -175,9 +175,9 @@ public class DatabaseHandler {
 
     public Student getStudent(String studentNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student WHERE StudentNumber = ?");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student WHERE StudentNumber = ?;");
             preparedStatement.setString(1, studentNumber);
-            ResultSet rs = preparedStatement.executeQuery();
+            ResultSet rs = preparedStatement.executeQuery();rs.next();
             List<ClassResultAttendance> classResultAttendances = getStudentClassesResultsAttendance(studentNumber);
             Student student = new Student(rs.getString("StudentNumber"), rs.getString("Qualification"), rs.getString("FirstName"), rs.getString("LastName"), rs.getString("Email"), rs.getString("ContactNumber"), classResultAttendances);
             log("Server> Successfully Created Student: " + studentNumber);
@@ -381,7 +381,8 @@ public class DatabaseHandler {
 
     public String getStudentQualification(String studentNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT Qualification From Student WHERE StudentNumber = ?;");
+            System.out.println(studentNumber);
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student WHERE StudentNumber = ?;");
             preparedStatement.setString(1, studentNumber);
             ResultSet rs = preparedStatement.executeQuery();
             return rs.getString("Qualification");
@@ -539,11 +540,11 @@ public class DatabaseHandler {
 
     public Lecturer getLecturer(String lecturerNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Lecturer WHERE LecturerNumber = ?");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Lecturer WHERE LecturerID = ?");
             preparedStatement.setString(1, lecturerNumber);
             ResultSet rs = preparedStatement.executeQuery();
             List<LecturerClass> classes = getLecturerClasses(lecturerNumber);
-            Lecturer lecturer = new Lecturer(rs.getString("FirstName"), rs.getString("LastName"), rs.getString("LecturerNumber"), rs.getString("Email"), rs.getString("ContactNumber"), classes);
+            Lecturer lecturer = new Lecturer(rs.getString("FirstName"), rs.getString("LastName"), rs.getString("LecturerID"), rs.getString("Email"), rs.getString("ContactNumber"), getLecturerImage(rs.getString("LecturerID")), classes);
             log("Server> Successfully Created ClassLecturer: " + lecturerNumber);
             return lecturer;
         } catch (SQLException ex) {
@@ -558,11 +559,11 @@ public class DatabaseHandler {
         ObservableList<ContactDetails> contactDetails = FXCollections.observableArrayList();
         for (int i = 0; i < classes.size(); i++) {
             try {
-                PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student, Registered, Class WHERE Student.StudentNumber = Registered.StudentNumber AND Class.ClassID = Registered.ClassID AND ClassID = ?;");
+                PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student, Registered, Class WHERE Student.StudentNumber = Registered.StudentNumber AND Class.ClassID = Registered.ClassID AND Class.ClassID = ?;");
                 preparedStatement.setInt(1, classes.get(i).getId());
                 ResultSet rs = preparedStatement.executeQuery();
                 while (rs.next()) {
-                    ContactDetails newContactDetail = new ContactDetails(0, rs.getString("FirstName") + " " + rs.getString("LastName"), rs.getString("Student.StudentNumber"), "Student", rs.getString("ContactNumber"), rs.getString("Email"), null);//TODO send null bytes
+                    ContactDetails newContactDetail = new ContactDetails(0, rs.getString("FirstName") + " " + rs.getString("LastName"), rs.getString("StudentNumber"), "Student", rs.getString("ContactNumber"), rs.getString("Email"), null);//TODO send null bytes
                     if (!contactDetails.contains(newContactDetail)) {
                         contactDetails.add(newContactDetail);
                     }
@@ -579,11 +580,14 @@ public class DatabaseHandler {
     public List<LecturerClass> getLecturerClasses(String lecturerNumber) {
         List<LecturerClass> classes = new ArrayList<>();
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Class WHERE LecturerNumber = ?");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Class WHERE LecturerID = ?");
             preparedStatement.setString(1, lecturerNumber);
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
-                classes.add(new LecturerClass(rs.getInt("ClassTimeID"), rs.getString("ModuleName"), rs.getString("ModuleNumber"), getClassTimes(rs.getInt("ClassID")), getFiles(rs.getInt("ClassID"))));
+                PreparedStatement preparedStatement2 = con.prepareStatement("SELECT ClassTimeID FROM ClassTime WHERE ClassID = ?");
+                preparedStatement2.setInt(1, rs.getInt("ClassID"));
+                ResultSet rs2 = preparedStatement2.executeQuery();
+                classes.add(new LecturerClass(rs2.getInt("ClassTimeID"), rs.getString("ModuleName"), rs.getString("ModuleNumber"), getClassTimes(rs.getInt("ClassID")), getFiles(rs.getInt("ClassID"))));
             }
             log("Server> Successfully Gotten Classes For ClassLecturer: " + lecturerNumber);
             return classes;
@@ -596,7 +600,7 @@ public class DatabaseHandler {
 
     public String getLecturerPassword(String lecturerNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT Password From Lecturer WHERE lecturerNumber = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT Password From Lecturer WHERE LecturerID = ?;");
             preparedStatement.setString(1, lecturerNumber);
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
@@ -615,7 +619,7 @@ public class DatabaseHandler {
 
     public Boolean changeLecturerPassword(String lecturerNumber, String newPassword) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("UPDATE Lecturer SET Password = ? WHERE LecturerNumber = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("UPDATE Lecturer SET Password = ? WHERE LecturerID = ?;");
             preparedStatement.setString(1, newPassword);
             preparedStatement.setString(2, lecturerNumber);
             log("Server> Successfully Changed Password For ClassLecturer: " + lecturerNumber);
@@ -629,7 +633,7 @@ public class DatabaseHandler {
 
     public Boolean emailLecturerPassword(String email, String lecturerNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT Password, LecturerNumber From Lecturer WHERE Email = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT Password, LecturerID From Lecturer WHERE Email = ?;");
             preparedStatement.setString(1, email);
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
@@ -686,7 +690,7 @@ public class DatabaseHandler {
 
     private Boolean addLecturer(String lecturerNumber, String firstName, String lastName, String email, String contactNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Lecturer (LecturerNumber, FirstName, LastName, Password, Email, ContactNumber) VALUES (?,?,?,?,?,?);");
+            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Lecturer (LecturerID, FirstName, LastName, Password, Email, ContactNumber) VALUES (?,?,?,?,?,?);");
             preparedStatement.setString(1, lecturerNumber);
             preparedStatement.setString(2, firstName);
             preparedStatement.setString(3, lastName);
@@ -718,7 +722,7 @@ public class DatabaseHandler {
 
     private Boolean addClass(String moduleName, String moduleNumber, String lecturerNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Class (ModuleName, ModuleNumber, LecturerNumber) VALUES (?,?,?);");
+            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Class (ModuleName, ModuleNumber, LecturerID) VALUES (?,?,?);");
             preparedStatement.setString(1, moduleName);
             preparedStatement.setString(2, moduleNumber);
             preparedStatement.setString(3, lecturerNumber);
@@ -757,7 +761,7 @@ public class DatabaseHandler {
             preparedStatement.setInt(4, finalWeight);
             preparedStatement.setString(5, resultName);
             preparedStatement.execute();
-            if(!resultName.matches("SupplementaryExam")) {//TODO String correct
+            if (!resultName.matches("SupplementaryExam")) {//TODO String correct
                 preparedStatement = con.prepareStatement("SELECT ResultTeemplateID FROM ResultTemplate WHERE ClassID = ? AND ResultMax = ? AND DPWeight = ? AND FinalWeight = ? AND ResultName = ?;");
                 preparedStatement.setInt(1, classID);
                 preparedStatement.setInt(2, resultMax);
@@ -776,14 +780,14 @@ public class DatabaseHandler {
         }
     }
 
-    private Boolean addResultForClass(int classID, int resultTemplateID){
+    private Boolean addResultForClass(int classID, int resultTemplateID) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Registered WHERE ClassID = ?;");
             preparedStatement.setInt(1, classID);
             ResultSet rs = preparedStatement.executeQuery();
-            while (rs.next()){
+            while (rs.next()) {
                 PreparedStatement preparedStatement2 = con.prepareStatement("INSERT INTO Result (ResultTemplateID, StudentNumber, Result) VALUES (?,?,?);");
-                preparedStatement2.setInt(1, rs.getInt("ResultTemplateID"));
+                preparedStatement2.setInt(1, resultTemplateID);
                 preparedStatement2.setString(2, rs.getString("StudentNumber"));
                 preparedStatement2.setInt(3, -1);
                 preparedStatement2.execute();
@@ -847,13 +851,13 @@ public class DatabaseHandler {
         }
     }
 
-    private Boolean addRegisterResults (String studentNumber, int classID) {
+    private Boolean addRegisterResults(String studentNumber, int classID) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM ResultTemplate WHERE ClassID = ?;");
             preparedStatement.setInt(1, classID);
             ResultSet rs = preparedStatement.executeQuery();
-            while (rs.next()){
-                if(!rs.getString("ResultName").matches("SupplementaryExam")) {//TODO String correct
+            while (rs.next()) {
+                if (!rs.getString("ResultName").matches("SupplementaryExam")) {//TODO String correct
                     PreparedStatement preparedStatement2 = con.prepareStatement("INSERT INTO Result (ResultTemplateID, StudentNumber, Result) VALUES (?,?,?);");
                     preparedStatement2.setInt(1, rs.getInt("ResultTemplateID"));
                     preparedStatement2.setString(2, studentNumber);
@@ -986,7 +990,7 @@ public class DatabaseHandler {
     public Boolean updateLecturer(String lecturerNumber, String firstName, String lastName, String email, String contactNumber) {
         try {
             if (isLecturerRegistered(lecturerNumber)) {
-                PreparedStatement preparedStatement = con.prepareStatement("UPDATE Lecturer SET LecturerNumber = ? AND FirstName = ? AND LastName = ? AND Email = ? AND ContactNumber = ? WHERE LecturerNumber = ?;");
+                PreparedStatement preparedStatement = con.prepareStatement("UPDATE Lecturer SET LecturerID = ? AND FirstName = ? AND LastName = ? AND Email = ? AND ContactNumber = ? WHERE LecturerID = ?;");
                 preparedStatement.setString(1, lecturerNumber);
                 preparedStatement.setString(2, firstName);
                 preparedStatement.setString(3, lastName);
@@ -1024,7 +1028,7 @@ public class DatabaseHandler {
 
     private Boolean isLecturerRegistered(String lecturerNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Lecturer WHERE LecturerNumber = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Lecturer WHERE LecturerID = ?;");
             preparedStatement.setString(1, lecturerNumber);
             return preparedStatement.executeQuery().next();
         } catch (SQLException ex) {
@@ -1037,7 +1041,7 @@ public class DatabaseHandler {
     public Boolean updateClass(int classID, String moduleName, String moduleNumber, String lecturerNumber, List<ClassTime> classTime) {
         try {
             if (isClassRegistered(classID)) {
-                PreparedStatement preparedStatement = con.prepareStatement("UPDATE Class SET ClassID = ? AND ModuleName = ? AND ModuleNumber = ? AND LecturerNumber = ? WHERE ClassID = ?;");
+                PreparedStatement preparedStatement = con.prepareStatement("UPDATE Class SET ClassID = ? AND ModuleName = ? AND ModuleNumber = ? AND LecturerID = ? WHERE ClassID = ?;");
                 preparedStatement.setInt(1, classID);
                 preparedStatement.setString(2, moduleName);
                 preparedStatement.setString(3, moduleNumber);
@@ -1051,7 +1055,7 @@ public class DatabaseHandler {
                 return true;
             } else {
                 addClass(moduleName, moduleNumber, lecturerNumber);
-                PreparedStatement preparedStatement = con.prepareStatement("SELECT ClassID FROM Class WHERE ModuleName = ? AND ModuleNumber = ? AND LecurerNumber = ?;");
+                PreparedStatement preparedStatement = con.prepareStatement("SELECT ClassID FROM Class WHERE ModuleName = ? AND ModuleNumber = ? AND LecurerID = ?;");
                 preparedStatement.setString(1, moduleName);
                 preparedStatement.setString(2, moduleNumber);
                 preparedStatement.setString(3, lecturerNumber);
@@ -1407,7 +1411,7 @@ public class DatabaseHandler {
     public Boolean removeLecturer(String lecturerNumber) {
         Lecturer l = getLecturer(lecturerNumber);
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("DELETE FROM Lecturer WHERE LecturerNumber = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("DELETE FROM Lecturer WHERE LecturerID = ?;");
             preparedStatement.setString(1, l.getLecturerNumber());
             preparedStatement.executeQuery().next();
             preparedStatement = con.prepareStatement("DELETE FROM Notification WHERE Tag = ?;");
@@ -1417,7 +1421,7 @@ public class DatabaseHandler {
             preparedStatement.setString(1, l.getLecturerNumber());
             preparedStatement.executeQuery().next();
             for (int i = 0; i < l.getClasses().size(); i++) {
-                preparedStatement = con.prepareStatement("UPDATE Class SET LecturerID = 0 WHERE ClassID = ?;");
+                preparedStatement = con.prepareStatement("UPDATE Class SET LecturerID = -1 WHERE ClassID = ?;");
                 preparedStatement.setInt(1, l.getClasses().get(i).getId());
                 preparedStatement.executeQuery().next();
             }
@@ -1611,7 +1615,7 @@ public class DatabaseHandler {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Lecturer;");
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
-                lecturers.add(getLecturer(rs.getString("LecturerNumber")));
+                lecturers.add(getLecturer(rs.getString("LecturerID")));
             }
             return lecturers;
         } catch (SQLException ex) {
@@ -1634,7 +1638,7 @@ public class DatabaseHandler {
                 while (rs2.next()) {
                     classTimes.add(new ClassTime(rs2.getInt("ClassTimeID"), rs2.getInt("ClassID"), rs2.getString("RoomNumber"), rs2.getInt("DayOfWeek"), rs2.getInt("StartSlot"), rs2.getInt("EndSlot")));
                 }
-                classes.add(new AdminClass(rs.getInt("classID"), rs.getString("ModuleNumber"), rs.getString("ModuleName"), rs.getString("LecturerNumber"), classTimes));
+                classes.add(new AdminClass(rs.getInt("classID"), rs.getString("ModuleNumber"), rs.getString("ModuleName"), rs.getString("LecturerID"), classTimes));
             }
             return classes;
         } catch (SQLException ex) {
@@ -1700,7 +1704,7 @@ public class DatabaseHandler {
     public List<LecturerStudentAttendanceClass> getStudentsInClassAttendanceClasses(String studentNumber, String lecturerNumber) {
         ObservableList<LecturerStudentAttendanceClass> studentsInClassAttendanceClasses = FXCollections.observableArrayList();
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Class, Registered WHERE Registered.StudentNumber = ? AND Registered.ClassID = Class.ClassID AND Class.LecturerNumber = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Class, Registered WHERE Registered.StudentNumber = ? AND Registered.ClassID = Class.ClassID AND Class.LecturerID = ?;");
             preparedStatement.setString(1, studentNumber);
             preparedStatement.setString(1, lecturerNumber);
             ResultSet rs = preparedStatement.executeQuery();
@@ -1754,7 +1758,7 @@ public class DatabaseHandler {
     public List<LecturerStudentResultClass> getStudentsInClassResultsClasses(String studentNumber, String lecturerNumber) {
         ObservableList<LecturerStudentResultClass> studentsInClassResultsClasses = FXCollections.observableArrayList();
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Class, Registered WHERE Registered.StudentNumber = ? AND Registered.ClassID = Class.ClassID AND Class.LecturerNumber = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Class, Registered WHERE Registered.StudentNumber = ? AND Registered.ClassID = Class.ClassID AND Class.LecturerID = ?;");
             preparedStatement.setString(1, studentNumber);
             preparedStatement.setString(1, lecturerNumber);
             ResultSet rs = preparedStatement.executeQuery();

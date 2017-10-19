@@ -184,7 +184,6 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     public Object getReply() {
         try {
             Object input;
-            System.out.println("Server> Waiting for reply...");
             synchronized (objectInputStream) {
                 while ((input = objectInputStream.readUTF()) == null) ;
             }
