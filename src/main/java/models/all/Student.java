@@ -10,9 +10,8 @@ public class Student implements Serializable {
     private String firstName;
     private String lastName;
     private String email;
-    private String contactNumber;
     private List<ClassResultAttendance> classResultAttendances;
-
+    private String contactNumber;
 
     public Student(String studentNumber, String qualification, String firstName, String lastName, String email, String contactNumber, List<ClassResultAttendance> classResultAttendances) {
         this.studentNumber = studentNumber;
@@ -20,8 +19,8 @@ public class Student implements Serializable {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
-        this.contactNumber = contactNumber;
         this.classResultAttendances = classResultAttendances;
+        this.contactNumber = contactNumber;
     }
 
     public String getStudentNumber() {
@@ -44,12 +43,16 @@ public class Student implements Serializable {
         return email;
     }
 
-    public String getContactNumber() {
-        return contactNumber;
-    }
-
     public List<ClassResultAttendance> getClassResultAttendances() {
         return classResultAttendances;
     }
 
+    public String getContactNumber() {
+        return contactNumber;
+    }
+
+    @Override
+    public String toString() {
+        return "First Name: " + firstName + "\nLast Name: " + lastName + "\nStudent Number: " + studentNumber + "\nQualification: " + qualification + "\nEmail: " + email + "\nContact Number: " + contactNumber;
+    }
 }

@@ -1,7 +1,5 @@
 package models.all;
 
-import models.student.ClassLecturer;
-
 import java.io.Serializable;
 import java.util.List;
 

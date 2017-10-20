@@ -23,13 +23,9 @@ import java.util.Arrays;
 
 public class StudentConnectionHandler extends ConnectionHandler implements Runnable {
 
-    private Socket socket;
-    private ObjectInputStream objectInputStream;
-    private ObjectOutputStream objectOutputStream;
     private String studentNumber;
     private String qualification;
     private ObjectProperty<Student> student = new SimpleObjectProperty<>();
-    private ObservableList<ConnectionHandler> connectionsList;
     private ObservableList<Notice> notices = FXCollections.observableArrayList();
     private ObservableList<Notification> notifications = FXCollections.observableArrayList();
     private ObservableList<ContactDetails> contactDetails = FXCollections.observableArrayList();
@@ -41,14 +37,10 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     public volatile BooleanProperty updateContactDetails = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateImportantDates = new SimpleBooleanProperty(false);
     public volatile BooleanProperty running = new SimpleBooleanProperty(true);
-    private DatabaseHandler dh = new DatabaseHandler();
 
-    public StudentConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String studentNumber, ObservableList<ConnectionHandler> connectionsList) {
-        this.socket = socket;
-        this.objectInputStream = objectInputStream;
-        this.objectOutputStream = objectOutputStream;
+    public StudentConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String studentNumber, ObservableList<ConnectionHandler> connectionsList, DatabaseHandler dh) {
+        super(socket, objectInputStream, objectOutputStream, connectionsList, dh);
         this.studentNumber = studentNumber;
-        this.connectionsList = connectionsList;
         this.qualification = dh.getStudentQualification(studentNumber);
     }
 
@@ -83,6 +75,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                 updateStudent.set(false);
             }
         });
+        //TODO no need to add listener to list as updateStudent() already runs when updated ???
         student.addListener(e -> {
             outputQueue.add(0, student.get());
         });
@@ -181,21 +174,6 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         }
     }
 
-    public Object getReply() {
-        try {
-            Object input;
-            synchronized (objectInputStream) {
-                while ((input = objectInputStream.readUTF()) == null) ;
-            }
-            return input;
-        } catch (Exception ex) {
-            terminateConnection();
-            dh.log("Server> sendData> " + ex);
-            ex.printStackTrace();
-        }
-        return null;
-    }
-
     private boolean isLecturerOnline(String lecturerNumber) {
         for (ConnectionHandler ch : connectionsList) {
             if (ch instanceof LecturerConnectionHandler) {
@@ -286,17 +264,6 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
 
     public String getStudentNumber() {
         return studentNumber;
-    }
-
-    private void terminateConnection() {
-        try {
-            running.set(false);
-            socket.close();
-            connectionsList.remove(this);
-        } catch (Exception ex) {
-            dh.log("Server> terminateConnection> " + ex);
-            ex.printStackTrace();
-        }
     }
 
 }

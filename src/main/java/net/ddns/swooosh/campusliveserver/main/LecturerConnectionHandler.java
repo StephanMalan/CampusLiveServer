@@ -20,12 +20,8 @@ import java.util.List;
 
 public class LecturerConnectionHandler extends ConnectionHandler implements Runnable {
 
-    private Socket socket;
-    private ObjectInputStream objectInputStream;
-    private ObjectOutputStream objectOutputStream;
     private String lecturerNumber;
     private ObjectProperty<Lecturer> lecturer = new SimpleObjectProperty<>();
-    private ObservableList<ConnectionHandler> connectionsList;
     private ObservableList<Notice> notices = FXCollections.observableArrayList();
     private ObservableList<Notification> notifications = FXCollections.observableArrayList();
     private ObservableList<ContactDetails> contactDetails = FXCollections.observableArrayList();
@@ -41,16 +37,11 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     public volatile BooleanProperty updateStudentAttendance = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateStudentResults = new SimpleBooleanProperty(false);
     public volatile BooleanProperty running = new SimpleBooleanProperty(true);
-    private DatabaseHandler dh;
     //private FileDownloader fileDownloader = new FileDownloader()//TODO where to start
 
     public LecturerConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String lecturerNumber, ObservableList<ConnectionHandler> connectionsList, DatabaseHandler dh) {
-        this.socket = socket;
-        this.objectInputStream = objectInputStream;
-        this.objectOutputStream = objectOutputStream;
+        super(socket, objectInputStream, objectOutputStream, connectionsList, dh);
         this.lecturerNumber = lecturerNumber;
-        this.connectionsList = connectionsList;
-        this.dh = dh;
     }
 
     public void run() {
@@ -332,16 +323,5 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     private void updateStudentResults() {
         studentResults.addAll(dh.getAllStudentsInClassResults(lecturerNumber));
     }
-
-    private void terminateConnection() {
-        try {
-            running.set(false);
-            socket.close();
-            connectionsList.remove(this);
-        } catch (Exception ex) {
-            System.out.println("Server> terminateConnection> " + ex);
-        }
-    }
-
 
 }

@@ -7,12 +7,12 @@ public class Result implements Serializable {
     private int resultTemplateID;
     private String studentNumber;
     private String resultName;
-    private int result;
-    private int resultMax;
-    private int dpWeight;
-    private int finalWeight;
+    private double result;
+    private double resultMax;
+    private double dpWeight;
+    private double finalWeight;
 
-    public Result(int resultTemplateID, String studentNumber, String resultName, int result, int resultMax, int dpWeight, int finalWeight) {
+    public Result(int resultTemplateID, String studentNumber, String resultName, double result, double resultMax, double dpWeight, double finalWeight) {
         this.resultTemplateID = resultTemplateID;
         this.studentNumber = studentNumber;
         this.resultName = resultName;
@@ -34,19 +34,19 @@ public class Result implements Serializable {
         return resultName;
     }
 
-    public int getResult() {
+    public double getResult() {
         return result;
     }
 
-    public int getResultMax() {
+    public double getResultMax() {
         return resultMax;
     }
 
-    public int getDpWeight() {
+    public double getDpWeight() {
         return dpWeight;
     }
 
-    public int getFinalWeight() {
+    public double getFinalWeight() {
         return finalWeight;
     }
 }

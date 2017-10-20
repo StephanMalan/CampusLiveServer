@@ -2,9 +2,10 @@ package models.admin;
 
 import models.all.ClassTime;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class AdminClass {
+public class AdminClass implements Serializable{
 
     private int classID;
     private String moduleNumber;

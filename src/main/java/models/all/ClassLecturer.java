@@ -1,4 +1,4 @@
-package models.student;
+package models.all;
 
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;

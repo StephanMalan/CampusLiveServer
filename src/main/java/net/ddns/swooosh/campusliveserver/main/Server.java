@@ -32,17 +32,14 @@ public class Server {
         if (!FILES_FOLDER.exists()) {
             FILES_FOLDER.mkdirs();
             dh.log("Server> Local Files Folder Created");
-            System.out.println("Server> Local Files Folder Created");
         }
         if (!LECTURER_IMAGES.exists()) {
             LECTURER_IMAGES.mkdirs();
             dh.log("Server> Local Lecturer Images Folders Created");
-            System.out.println("Server> Local Lecturer Images Folders Created");
         }
         if (!CONTACT_IMAGES.exists()) {
             CONTACT_IMAGES.mkdirs();
             dh.log("Server> Local Contact Images Folder Created");
-            System.out.println("Server> Local Contact Images Folder Created");
         }
         new ClientListener().start();
     }
@@ -52,19 +49,16 @@ public class Server {
         public void run() {
             try {
                 dh.log("Server> Trying to set up client on port " + PORT);
-                System.out.println("Server> Trying to set up client on port " + PORT);
                 System.setProperty("javax.net.ssl.keyStore", APPLICATION_FOLDER.getAbsolutePath() + "/campuslive.store");
                 System.setProperty("javax.net.ssl.keyStorePassword", "campuslivepassword1");
                 dh.log("Server> Set up client on port " + PORT);
-                System.out.println("Server> Set up client on port " + PORT);
                 ServerSocket ss = SSLServerSocketFactory.getDefault().createServerSocket(PORT);
                 while (true) {
                     while (connectionsList.size() <= MAX_CONNECTIONS) {
-                        System.out.println("Server> Waiting for new connection");
+                        dh.log("Server> Waiting for new connection");
                         Socket s = ss.accept();
                         s.setKeepAlive(true);
                         dh.log("Server> Connection established on " + s.getInetAddress().getHostAddress() + ":" + s.getPort());
-                        System.out.println("Server> Connection established on " + s.getInetAddress().getHostAddress() + ":" + s.getPort());
                         new LoginManager(s).start();
                     }
                 }
@@ -95,13 +89,14 @@ public class Server {
                     String input;
                     try {
                         while ((input = objectInputStream.readUTF()) == null) ;
+                        System.out.println("test: " + input); //TODO
                         if (input.startsWith("saf:")) {
                             dh.log("Server> Authorising Student : " + input.substring(4).split(":")[0]);
                             if (authoriseStudent(input.substring(4).split(":")[0], input.substring(4).split(":")[1])) {
-                                dh.log("Server> Authorisied Student : " + input.substring(4).split(":")[0]);
+                                dh.log("Server> Authorised Student : " + input.substring(4).split(":")[0]);
                                 objectOutputStream.writeObject("saf:y");
                                 objectOutputStream.flush();
-                                StudentConnectionHandler studentConnectionHandler = new StudentConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(4).split(":")[0], connectionsList);
+                                StudentConnectionHandler studentConnectionHandler = new StudentConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(4).split(":")[0], connectionsList, dh);
                                 Thread t = new Thread(studentConnectionHandler);
                                 t.start();
                                 connectionsList.add(studentConnectionHandler);
@@ -147,6 +142,7 @@ public class Server {
                                 objectOutputStream.flush();
                             }
                         } else if (input.startsWith("aa:")) {
+                            System.out.println("wtf?"); //TODO
                             dh.log("Server> Authorising Admin : " + input.substring(3).split(":")[0]);
                             if (authoriseAdmin(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
                                 dh.log("Server> Authorised Admin : " + input.substring(3).split(":")[0]);
@@ -164,7 +160,7 @@ public class Server {
                             }
                         }
                     } catch (SocketException e) {
-                        System.out.println("Server> User Disconnected");
+                        dh.log("Server> User Disconnected");
                         this.stop();
                         //connectionsList.remove(this);//TODO
                     } catch (EOFException e) {

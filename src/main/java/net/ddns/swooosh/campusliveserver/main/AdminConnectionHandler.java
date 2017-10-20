@@ -1,14 +1,13 @@
 package net.ddns.swooosh.campusliveserver.main;
 
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import models.admin.Admin;
 import models.admin.AdminClass;
 import models.admin.AdminLog;
+import models.admin.AdminSearch;
 import models.all.*;
 
 import java.io.IOException;
@@ -16,23 +15,24 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.Arrays;
 
 public class AdminConnectionHandler extends ConnectionHandler implements Runnable {
 
-    private Socket socket;
-    private ObjectInputStream objectInputStream;
-    private ObjectOutputStream objectOutputStream;
     private String username;
-    private ObservableList<ConnectionHandler> connectionsList;
     private ObservableList<Admin> admins = FXCollections.observableArrayList();
-    private ObservableList<Student> students = FXCollections.observableArrayList();
-    private ObservableList<Lecturer> lecturers = FXCollections.observableArrayList();
-    private ObservableList<AdminClass> classes = FXCollections.observableArrayList();
-    private ObservableList<ContactDetails> contactDetails = FXCollections.observableArrayList();
+    private ObservableList<AdminSearch> studentSearches = FXCollections.observableArrayList();
+    private Student student;
+    private ObservableList<AdminSearch> lecturerSearches = FXCollections.observableArrayList();
+    private Lecturer lecturer;
+    private ObservableList<AdminSearch> classSearches = FXCollections.observableArrayList();
+    private AdminClass adminClass;
+    private ObservableList<AdminSearch> contactSearches = FXCollections.observableArrayList();
+    private ContactDetails contactDetails;
     private ObservableList<Notice> notices = FXCollections.observableArrayList();
     private ObservableList<Notification> notifications = FXCollections.observableArrayList();
     private ObservableList<ImportantDate> importantDates = FXCollections.observableArrayList();
-    public volatile ObservableList<Object> outputQueue = FXCollections.observableArrayList();
+    private AdminLog adminLog;
     public volatile BooleanProperty updateAdmins = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateStudents = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateLecturers = new SimpleBooleanProperty(false);
@@ -41,16 +41,11 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
     public volatile BooleanProperty updateNotices = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateNotifications = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateImportantDates = new SimpleBooleanProperty(false);
-    public volatile BooleanProperty running = new SimpleBooleanProperty(true);
-    private DatabaseHandler dh;
+    public volatile ObservableList<Object> outputQueue = FXCollections.observableArrayList();
 
     public AdminConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String username, ObservableList<ConnectionHandler> connectionsList, DatabaseHandler dh) {
-        this.socket = socket;
-        this.objectInputStream = objectInputStream;
-        this.objectOutputStream = objectOutputStream;
+        super(socket, objectInputStream, objectOutputStream, connectionsList, dh);
         this.username = username;
-        this.connectionsList = connectionsList;
-        this.dh = dh;
     }
 
     public void run() {
@@ -122,12 +117,13 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                     if(input instanceof String) {
                         String text = input.toString();
                         if (text.startsWith("asd:")) {
-                            outputQueue.add(dh.getStudent(text.substring(4)));
+                            student = dh.getStudent(text.substring(4));
+                            outputQueue.add(student);
                         } else if(text.startsWith("ald:")){
                             outputQueue.add(dh.getLecturer(text.substring(4)));
                         } else if(text.startsWith("acd:")){
                             outputQueue.add(dh.getClass(Integer.parseInt(text.substring(4))));
-                        } else if(text.startsWith("asd:")){
+                        } else if(text.startsWith("asl:")){
                             try {
                                 outputQueue.add(new AdminLog(Files.readAllBytes(Server.LOG_FILE.toPath())));
                             } catch (IOException e) {
@@ -155,9 +151,16 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                             dh.removeContactDetails(Integer.parseInt(text.substring(3)));
                         } else if (text.startsWith("ri:")){//important dates
                             dh.removeImportantDate(Integer.parseInt(text.substring(3)));
+                        } else if (text.startsWith("uc:")){//unregister class
+                            dh.removeStudentFromClass(text.split(":")[1], Integer.parseInt(text.split(":")[2]));
+                            outputQueue.add(dh.getStudent(student.getStudentNumber()));
+                        } else if (text.startsWith("rsc:")){//register class
+                            dh.addStudentToClass(text.split(":")[1], Integer.parseInt(text.split(":")[2]));
+                            outputQueue.add(dh.getStudent(student.getStudentNumber()));
+                        } else if (text.startsWith("gac:")){//get all classes
+                            outputQueue.add(dh.getAllStudentClasses());
                         } else {
                             dh.log("Admin " + username + "> Requested Unknown Command: " + input);
-                            System.out.println("Unknown command: " + input);
                         }
                     } else if (input instanceof Student){
                         Student uStudent = (Student) input;
@@ -176,7 +179,7 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                         dh.updateNotice(uNotice.getId(), uNotice.getHeading(), uNotice.getDescription(), uNotice.getExpiryDate(), uNotice.getTag());
                     } else if (input instanceof Result){
                         Result uResult = (Result) input;
-                        dh.updateResult(uResult.getResultTemplateID(), uResult.getStudentNumber(), uResult.getResult());
+                        dh.updateResult(uResult.getResultTemplateID(), uResult.getStudentNumber(), (int) uResult.getResult());
                     } else if (input instanceof ResultTemplate){//-1 id = new
                         ResultTemplate uResultTemplate = (ResultTemplate) input;
                         dh.updateResultTemplate(uResultTemplate.getId(), uResultTemplate.getClassID(), uResultTemplate.getResultMax(), uResultTemplate.getDpWeight(), uResultTemplate.getFinalWeight(), uResultTemplate.getResultName());
@@ -214,70 +217,53 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                 objectOutputStream.writeObject(data);
                 objectOutputStream.flush();
                 objectOutputStream.reset();
+                dh.log("Server> Sent data: " + data);
             }
         } catch (Exception ex) {
             terminateConnection();
             dh.log("Server> sendData> " + ex);
             ex.printStackTrace();
         }
-    }
-
-    public Object getReply() {
-        try {
-            Object input;
-            synchronized (objectInputStream) {
-                while ((input = objectInputStream.readUTF()) == null);
-            }
-            return input;
-        } catch (Exception ex) {
-            terminateConnection();
-            dh.log("Server> sendData> " + ex);
-            ex.printStackTrace();
-        }
-        return null;
     }
 
     private void updateAdmins() {
         admins.setAll(dh.getAllAdmins());
+        outputQueue.add(Arrays.asList(admins.toArray()));
     }
 
     private void updateStudents() {
-        students.setAll(dh.getAllStudents());
+        studentSearches.setAll(dh.getStudentSearch());
+        outputQueue.add(Arrays.asList(studentSearches.toArray()));
     }
 
     private void updateLecturers() {
-        lecturers.setAll(dh.getAllLecturers());
+        lecturerSearches.setAll(dh.getLecturerSearch());
+        outputQueue.add(Arrays.asList(lecturerSearches.toArray()));
     }
 
     private void updateClasses() {
-        classes.setAll(dh.getAllClasses());
+        classSearches.setAll(dh.getClassSearch());
+        outputQueue.add(Arrays.asList(classSearches.toArray()));
     }
 
     private void updateContactDetails() {
-        contactDetails.setAll(dh.getContactDetails());
+        contactSearches.setAll(dh.getContactDetailsSearch());
+        outputQueue.add(Arrays.asList(contactSearches.toArray()));
     }
 
     private void updateNotices() {
         notices.setAll(dh.getAllNotices());
+        outputQueue.add(Arrays.asList(notices.toArray()));
     }
 
     private void updateNotifications() {
         notifications.setAll(dh.getAllNotifications());
+        outputQueue.add(Arrays.asList(notifications.toArray()));
     }
 
     private void updateImportantDates() {
         importantDates.setAll(dh.getImportantDates());
-    }
-
-    private void terminateConnection() {
-        try {
-            running.set(false);
-            socket.close();
-            connectionsList.remove(this);
-        } catch (Exception ex) {
-            dh.log("Server> terminateConnection> " + ex);
-            ex.printStackTrace();
-        }
+        outputQueue.add(Arrays.asList(importantDates.toArray()));
     }
 
 }

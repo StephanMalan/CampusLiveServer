@@ -1,6 +1,8 @@
 package models.admin;
 
-public class AdminLog {
+import java.io.Serializable;
+
+public class AdminLog implements Serializable{
 
     private byte[] logFile;
 

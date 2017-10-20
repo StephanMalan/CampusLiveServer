@@ -1,6 +1,8 @@
 package models.admin;
 
-public class AdminSearch {
+import java.io.Serializable;
+
+public class AdminSearch implements Serializable{
 
     private String type; //student, lecturer, class, contact
     private String primaryText;
@@ -22,5 +24,10 @@ public class AdminSearch {
 
     public String getSecondaryText() {
         return secondaryText;
+    }
+
+    @Override
+    public String toString() {
+        return primaryText + " - " + secondaryText;
     }
 }
