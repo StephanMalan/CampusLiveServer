@@ -304,7 +304,7 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     }
 
     private void updateNotifications() {
-        notifications.addAll(dh.getNotifications(lecturerNumber, "ClassLecturer"));
+        notifications.addAll(dh.getNotifications(lecturerNumber));
     }
 
     private void updateContactDetails() {

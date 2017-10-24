@@ -30,6 +30,7 @@ public class ConnectionHandler {
             running.set(false);
             socket.close();
             connectionsList.remove(this);
+            System.out.println("Num connections: " + connectionsList.size());
         } catch (Exception ex) {
             dh.log("Server> terminateConnection> " + ex);
             ex.printStackTrace();

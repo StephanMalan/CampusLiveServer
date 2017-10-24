@@ -15,11 +15,10 @@
             <version>3.16.1</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/javax.mail/javax.mail-api -->
         <dependency>
-            <groupId>javax.mail</groupId>
-            <artifactId>javax.mail-api</artifactId>
-            <version>1.4.5</version>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>javax.mail</artifactId>
+            <version>1.6.0</version>
         </dependency>
 
     </dependencies>
@@ -28,7 +27,6 @@
         <finalName>CampusLiveServer</finalName>
         <plugins>
 
-            <!-- download source code in Eclipse, best practice -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-eclipse-plugin</artifactId>
@@ -39,7 +37,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Set a compiler level -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -50,13 +47,11 @@
                 </configuration>
             </plugin>
 
-            <!-- Maven Shade Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>2.3</version>
                 <executions>
-                    <!-- Run shade goal on package phase -->
                     <execution>
                         <phase>package</phase>
                         <goals>
@@ -64,7 +59,6 @@
                         </goals>
                         <configuration>
                             <transformers>
-                                <!-- add Main-Class to manifest file -->
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>net.ddns.swooosh.campusliveserver.main.Server</mainClass>
                                 </transformer>

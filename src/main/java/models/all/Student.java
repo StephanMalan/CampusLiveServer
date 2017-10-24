@@ -51,8 +51,7 @@ public class Student implements Serializable {
         return contactNumber;
     }
 
-    @Override
-    public String toString() {
+    public String getStudentInformation() {
         return "First Name: " + firstName + "\nLast Name: " + lastName + "\nStudent Number: " + studentNumber + "\nQualification: " + qualification + "\nEmail: " + email + "\nContact Number: " + contactNumber;
     }
 }

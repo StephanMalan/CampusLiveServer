@@ -60,4 +60,8 @@ public class Lecturer implements Serializable{
     public List<LecturerClass> getClasses() {
         return classes;
     }
+
+    public String getLecturerDetails() {
+        return "First Name: " + firstName + "\nLast Name: " + lastName + "\nLecturer Number: " + lecturerNumber + "\nEmail: " + email + "\nContact Number: " + contactNumber;
+    }
 }

@@ -46,10 +46,11 @@ public class ClassLecturer implements Serializable{
     }
 
     public Image getLecturerImage() {
-        try {
-            return SwingFXUtils.toFXImage(ImageIO.read(new ByteArrayInputStream(lecturerImage)), null);
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        if (lecturerImage != null) {
+            try {
+                return SwingFXUtils.toFXImage(ImageIO.read(new ByteArrayInputStream(lecturerImage)), null);
+            } catch (Exception ex) {
+            }
         }
         return null;
     }

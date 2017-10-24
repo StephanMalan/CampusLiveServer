@@ -16,7 +16,7 @@ public class Server {
 
     static final File APPLICATION_FOLDER = new File(System.getProperty("user.home") + "/AppData/Local/Swooosh/CampusLive");
     static final File FILES_FOLDER = new File(APPLICATION_FOLDER.getAbsolutePath() + "/Files");
-    static final File LECTURER_IMAGES = new File(APPLICATION_FOLDER.getAbsolutePath() + "/ClassLecturer");
+    static final File LECTURER_IMAGES = new File(APPLICATION_FOLDER.getAbsolutePath() + "/Lecturer");
     static final File CONTACT_IMAGES = new File(APPLICATION_FOLDER.getAbsolutePath() + "/Contact");
     static final File DATABASE_FILE = new File(APPLICATION_FOLDER.getAbsolutePath() + "/CampusLiveDB.db");
     static final File LOG_FILE = new File(APPLICATION_FOLDER.getAbsolutePath() + "/CampusLiveLogFile.txt");
@@ -107,9 +107,9 @@ public class Server {
                                 objectOutputStream.flush();
                             }
                         } else if (input.startsWith("san:")) {
-                            dh.log("Server> Authorising Student Off-Campus: " + input.substring(3).split(":")[0]);
-                            if (authoriseStudent(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
-                                dh.log("Server> Authorised Student Off-Campus: " + input.substring(3).split(":")[0]);
+                            dh.log("Server> Authorising Student Off-Campus: " + input.substring(4).split(":")[0]);
+                            if (authoriseStudent(input.substring(4).split(":")[0], input.substring(4).split(":")[1])) {
+                                dh.log("Server> Authorised Student Off-Campus: " + input.substring(4).split(":")[0]);
                                 objectOutputStream.writeObject("san:y");
                                 objectOutputStream.flush();
 
@@ -142,7 +142,6 @@ public class Server {
                                 objectOutputStream.flush();
                             }
                         } else if (input.startsWith("aa:")) {
-                            System.out.println("wtf?"); //TODO
                             dh.log("Server> Authorising Admin : " + input.substring(3).split(":")[0]);
                             if (authoriseAdmin(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
                                 dh.log("Server> Authorised Admin : " + input.substring(3).split(":")[0]);
@@ -158,6 +157,9 @@ public class Server {
                                 objectOutputStream.writeObject("aa:n");
                                 objectOutputStream.flush();
                             }
+                        } else if (input.startsWith("fsp:")) {
+                            dh.log("Student > Requested Forgot Password");
+                            dh.emailStudentPassword(input.substring(4));
                         }
                     } catch (SocketException e) {
                         dh.log("Server> User Disconnected");
@@ -186,8 +188,6 @@ public class Server {
     private Boolean authoriseAdmin(String username, String password) {
         return dh.authoriseAdmin(username, password);
     }
-
-
 
     public static void main(String[] args) {
         new Server();

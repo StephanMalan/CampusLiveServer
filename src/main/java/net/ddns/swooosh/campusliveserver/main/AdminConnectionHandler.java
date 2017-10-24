@@ -118,9 +118,14 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                         String text = input.toString();
                         if (text.startsWith("asd:")) {
                             student = dh.getStudent(text.substring(4));
-                            outputQueue.add(student);
+                            if (student != null) {
+                                outputQueue.add(student);
+                            }
                         } else if(text.startsWith("ald:")){
-                            outputQueue.add(dh.getLecturer(text.substring(4)));
+                            lecturer = dh.getLecturer(text.substring(4));
+                            if (lecturer != null) {
+                                outputQueue.add(lecturer);
+                            }
                         } else if(text.startsWith("acd:")){
                             outputQueue.add(dh.getClass(Integer.parseInt(text.substring(4))));
                         } else if(text.startsWith("asl:")){
@@ -159,6 +164,12 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                             outputQueue.add(dh.getStudent(student.getStudentNumber()));
                         } else if (text.startsWith("gac:")){//get all classes
                             outputQueue.add(dh.getAllStudentClasses());
+                        } else if (text.startsWith("rap:")){//reset admin password
+                            dh.resetAdminPassword(text.split(":")[1], text.split(":")[2]);
+                        } else if (text.startsWith("idp:")){//is default password
+                            isDefaultPassword();
+                        } else if (text.startsWith("cdp:")){//reset admin password
+                           changeDefaultPassword(text.substring(4));
                         } else {
                             dh.log("Admin " + username + "> Requested Unknown Command: " + input);
                         }
@@ -223,6 +234,22 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
             terminateConnection();
             dh.log("Server> sendData> " + ex);
             ex.printStackTrace();
+        }
+    }
+
+    private void isDefaultPassword() {
+        if (dh.isDefaultAdminPassword(username)) {
+            outputQueue.add(0, "idp:y");
+        } else {
+            outputQueue.add(0, "idp:n");
+        }
+    }
+
+    private void changeDefaultPassword(String newPassword) {
+        if (dh.changeAdminDefaultPassword(username, newPassword)) {
+            outputQueue.add(0, "cdp:y");
+        } else {
+            outputQueue.add(0, "cdp:n");
         }
     }
 

@@ -25,6 +25,7 @@ import java.util.List;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Random;
 
 
 public class DatabaseHandler {
@@ -47,81 +48,82 @@ public class DatabaseHandler {
             if (createDatabase) {
                 Statement stmt = con.createStatement();
                 stmt.execute("CREATE TABLE Student (" +
-                        "StudentNumber text PRIMARY KEY, " +
-                        "Qualification text, " +
-                        "FirstName text, " +
-                        "LastName text, " +
-                        "Password text, " +
-                        "AssignedPassword boolean, " +
-                        "Email text, " +
-                        "ContactNumber text);");
+                        "StudentNumber TEXT PRIMARY KEY, " +
+                        "Qualification TEXT, " +
+                        "FirstName TEXT, " +
+                        "LastName TEXT, " +
+                        "Password TEXT, " +
+                        "AssignedPassword BOOLEAN, " +
+                        "Email TEXT, " +
+                        "ContactNumber TEXT);");
                 stmt.execute("CREATE TABLE Registered (" +
-                        "RegisteredID integer PRIMARY KEY AUTOINCREMENT, " +
-                        "StudentNumber text, " +
-                        "ClassID integer);");
+                        "RegisteredID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "StudentNumber TEXT, " +
+                        "ClassID INTEGER);");
                 stmt.execute("CREATE TABLE Attendance (" +
-                        "AttendanceID integer PRIMARY KEY AUTOINCREMENT, " +
-                        "ClassID integer, " +
-                        "StudentNumber text, " +
-                        "ADate text, " +
-                        "Attendance text);");
+                        "AttendanceID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "ClassID INTEGER, " +
+                        "StudentNumber TEXT, " +
+                        "ADate TEXT, " +
+                        "Attendance TEXT);");
                 stmt.execute("CREATE TABLE ClassTime (" +
-                        "ClassTimeID integer PRIMARY KEY AUTOINCREMENT, " +
-                        "ClassID integer, " +
-                        "RoomNumber text, " +
-                        "DayOfWeek integer, " +
-                        "StartSlot integer, " +
-                        "EndSlot integer);");
+                        "ClassTimeID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "ClassID INTEGER, " +
+                        "RoomNumber TEXT, " +
+                        "DayOfWeek INTEGER, " +
+                        "StartSlot INTEGER, " +
+                        "EndSlot INTEGER);");
                 stmt.execute("CREATE TABLE Class (" +
-                        "ClassID integer PRIMARY KEY AUTOINCREMENT, " +
-                        "ModuleName text, " +
-                        "ModuleNumber text, " +
-                        "LecturerID text);");
+                        "ClassID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "ModuleName TEXT, " +
+                        "ModuleNumber TEXT, " +
+                        "LecturerID TEXT);");
                 stmt.execute("CREATE TABLE Lecturer (" +
-                        "LecturerID text PRIMARY KEY, " +
-                        "FirstName text, " +
-                        "LastName text, " +
-                        "Password text, " +
-                        "Email text, " +
-                        "ContactNumber text);");
+                        "LecturerID TEXT PRIMARY KEY, " +
+                        "FirstName TEXT, " +
+                        "LastName TEXT, " +
+                        "Password TEXT, " +
+                        "Email TEXT, " +
+                        "ContactNumber TEXT);");
                 stmt.execute("CREATE TABLE Result (" +
-                        "ResultID integer PRIMARY KEY AUTOINCREMENT, " +
-                        "ResultTemplateID integer, " +
-                        "StudentNumber text, " +
-                        "Result integer);");
+                        "ResultID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "ResultTemplateID INTEGER, " +
+                        "StudentNumber TEXT, " +
+                        "Result INTEGER);");
                 stmt.execute("CREATE TABLE ResultTemplate (" +
-                        "ResultTemplateID integer PRIMARY KEY AUTOINCREMENT, " +
-                        "ClassID integer, " +
-                        "ResultMax integer, " +
-                        "DPWeight integer, " +
-                        "FinalWeight integer, " +
-                        "ResultName text);");
+                        "ResultTemplateID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "ClassID INTEGER, " +
+                        "ResultMax INTEGER, " +
+                        "DPWeight INTEGER, " +
+                        "FinalWeight INTEGER, " +
+                        "ResultName TEXT);");
                 stmt.execute("CREATE TABLE Notice (" +
-                        "NoticeID integer PRIMARY KEY AUTOINCREMENT, " +
-                        "Heading text, " +
-                        "Description text, " +
-                        "ExpiryDate text, " +
-                        "Tag text);");
+                        "NoticeID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "Heading TEXT, " +
+                        "Description TEXT, " +
+                        "ExpiryDate TEXT, " +
+                        "Tag TEXT);");
                 stmt.execute("CREATE TABLE Notification (" +
-                        "NotificationID integer PRIMARY KEY AUTOINCREMENT, " +
-                        "Heading text, " +
-                        "Description text, " +
-                        "Tag text);");
+                        "NotificationID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "Heading TEXT, " +
+                        "Description TEXT, " +
+                        "Tag TEXT);");
                 stmt.execute("CREATE TABLE ContactDetails (" +
-                        "ContactDetailsID integer PRIMARY KEY AUTOINCREMENT, " +
-                        "Name text, " +
-                        "Position text, " +
-                        "Department text, " +
-                        "ContactNumber text, " +
-                        "Email text);");
+                        "ContactDetailsID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "Name TEXT, " +
+                        "Position TEXT, " +
+                        "Department TEXT, " +
+                        "ContactNumber TEXT, " +
+                        "Email TEXT);");
                 stmt.execute("CREATE TABLE ImportantDate (" +
-                        "ImportantDateID integer PRIMARY KEY AUTOINCREMENT, " +
-                        "IDate text, " +
-                        "Description text);");
+                        "ImportantDateID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "IDate TEXT, " +
+                        "Description TEXT);");
                 stmt.execute("CREATE TABLE Admin (" +
-                        "Username text, " +
-                        "Password text, " +
-                        "Email text);");
+                        "Username TEXT, " +
+                        "Password TEXT, " +
+                        "AssignedPassword BOOLEAN, " +
+                        "Email TEXT);");
                 log("Server> Created Database");
             }
             System.out.println("Server> Connected to database");
@@ -180,7 +182,8 @@ public class DatabaseHandler {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student WHERE StudentNumber = ?;");
             preparedStatement.setString(1, studentNumber);
-            ResultSet rs = preparedStatement.executeQuery();rs.next();
+            ResultSet rs = preparedStatement.executeQuery();
+            rs.next();
             List<ClassResultAttendance> classResultAttendances = getStudentClassesResultsAttendance(studentNumber);
             Student student = new Student(rs.getString("StudentNumber"), rs.getString("Qualification"), rs.getString("FirstName"), rs.getString("LastName"), rs.getString("Email"), rs.getString("ContactNumber"), classResultAttendances);
             log("Server> Successfully Created Student: " + studentNumber);
@@ -300,7 +303,7 @@ public class DatabaseHandler {
         } catch (Exception ex) {
             log("Server> Can't find picture for lecturer, " + lecturerNumber);
         }
-        return getDefaultImageBytes();
+        return null;
     }
 
     private List<Attendance> getStudentAttendance(int classID, String studentNumber) {
@@ -342,7 +345,7 @@ public class DatabaseHandler {
 
     String getStudentPassword(String studentNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT Password From Student WHERE StudentNumber = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT Password FROM Student WHERE StudentNumber = ?;");
             preparedStatement.setString(1, studentNumber);
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
@@ -402,7 +405,7 @@ public class DatabaseHandler {
 
     ObservableList<Notice> getNotices(String studentNumber, String qualification) {//if date past
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * From Notice WHERE Tag = ? OR Tag = ? OR Tag = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Notice WHERE Tag = ? OR Tag = ? OR Tag = ?;");
             preparedStatement.setString(1, studentNumber);
             preparedStatement.setString(2, qualification);
             preparedStatement.setString(3, "Campus");
@@ -413,6 +416,9 @@ public class DatabaseHandler {
                 notices.add(newNotice);
             }
             log("Server> Successfully Gotten Notices For Student/ClassLecturer: " + studentNumber);
+            if (notices.isEmpty()) {
+                notices.add(new Notice(0, "NoNotice", "", "", ""));
+            }
             return notices;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -421,19 +427,19 @@ public class DatabaseHandler {
         }
     }
 
-    ObservableList<Notification> getNotifications(String studentNumber, String qualification) {//if dismissed
+    ObservableList<Notification> getNotifications(String studentNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * From Notification WHERE Tag = ? OR Tag = ? OR Tag = ?;");
-            preparedStatement.setString(1, studentNumber);
-            preparedStatement.setString(2, qualification);
-            preparedStatement.setString(3, "Campus");
-            ResultSet rs = preparedStatement.executeQuery();
             ObservableList<Notification> notifications = FXCollections.observableArrayList();
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Notification WHERE Tag = ?;");
+            preparedStatement.setString(1, studentNumber);
+            ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
-                Notification newNotification = new Notification(rs.getInt("NotificationID"), rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag"));
-                notifications.add(newNotification);
+                notifications.add(new Notification(rs.getInt("NotificationID"), rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag")));
             }
             log("Server> Successfully Gotten Notifications For Student/ClassLecturer: " + studentNumber);
+            if (notifications.isEmpty()) {
+                notifications.add(new Notification(0, "NoNotification", "", ""));
+            }
             return notifications;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -452,6 +458,9 @@ public class DatabaseHandler {
                 contactDetails.add(newContactDetail);
             }
             log("Server> Successfully Gotten Notices For Student/ClassLecturer: ");
+            if (contactDetails.isEmpty()) {
+                contactDetails.add(new ContactDetails(0, "NoContactDetails", "", "", "", "", null));
+            }
             return contactDetails;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -472,12 +481,12 @@ public class DatabaseHandler {
         } catch (Exception ex) {
             System.out.println("Server> Can't find picture for contact, " + contactID);
         }
-        return getDefaultImageBytes();
+        return null;
     }
 
     ObservableList<ImportantDate> getImportantDates() {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * From ImportantDate ORDER BY IDate;");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM ImportantDate ORDER BY IDate;");
             ResultSet rs = preparedStatement.executeQuery();
             ObservableList<ImportantDate> importantDates = FXCollections.observableArrayList();
             while (rs.next()) {
@@ -485,6 +494,9 @@ public class DatabaseHandler {
                 importantDates.add(newImportantDate);
             }
             log("Server> Successfully Gotten Notices For Student/ClassLecturer: ");
+            if (importantDates.isEmpty()) {
+                importantDates.add(new ImportantDate("NoImportantDate", ""));
+            }
             return importantDates;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -567,7 +579,7 @@ public class DatabaseHandler {
 
     String getLecturerPassword(String lecturerNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT Password From Lecturer WHERE LecturerID = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT Password FROM Lecturer WHERE LecturerID = ?;");
             preparedStatement.setString(1, lecturerNumber);
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
@@ -608,7 +620,7 @@ public class DatabaseHandler {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Admin;");
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
-                admins.add(new Admin(rs.getString("Username")));
+                admins.add(new Admin(rs.getString("Username"), rs.getString("Email")));
             }
             return admins;
         } catch (SQLException ex) {
@@ -621,7 +633,7 @@ public class DatabaseHandler {
     List<AdminSearch> getStudentSearch() {
         List<AdminSearch> studentSearches = new ArrayList<>();
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("Select (FirstName || ' ' || LastName) As Name, StudentNumber from Student");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT (FirstName || ' ' || LastName) AS Name, StudentNumber FROM Student");
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
                 studentSearches.add(new AdminSearch("Student", rs.getString("Name"), rs.getString("StudentNumber")));
@@ -638,7 +650,7 @@ public class DatabaseHandler {
     List<AdminSearch> getLecturerSearch() {
         List<AdminSearch> lecturerSearches = new ArrayList<>();
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("Select (FirstName || ' ' || LastName) As Name, LecturerID from Lecturer");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT (FirstName || ' ' || LastName) AS Name, LecturerID FROM Lecturer");
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
                 lecturerSearches.add(new AdminSearch("Lecturer", rs.getString("Name"), rs.getString("LecturerID")));
@@ -655,7 +667,7 @@ public class DatabaseHandler {
     List<AdminSearch> getClassSearch() {
         List<AdminSearch> classSearches = new ArrayList<>();
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("Select ModuleNumber, ClassID from Class");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT ModuleNumber, ClassID FROM Class");
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
                 classSearches.add(new AdminSearch("Class", rs.getString("ModuleNumber"), rs.getString("ClassID")));
@@ -672,7 +684,7 @@ public class DatabaseHandler {
     List<AdminSearch> getContactDetailsSearch() {
         List<AdminSearch> contactDetailsSearches = new ArrayList<>();
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("Select Name, Position from ContactDetails");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT Name, Position FROM ContactDetails");
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
                 contactDetailsSearches.add(new AdminSearch("Contact", rs.getString("Name"), rs.getString("Position")));
@@ -834,10 +846,40 @@ public class DatabaseHandler {
             preparedStatement.setString(1, newPassword);
             preparedStatement.setString(2, studentNumber);
             log("Server> Successfully Changed Password For Student: " + studentNumber);
-            return preparedStatement.execute();
+            return preparedStatement.executeUpdate() != 0;
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> changeStudentPassword> " + ex);
+            return false;
+        }
+    }
+
+    Boolean changeStudentDefaultPassword(String studentNumber, String newPassword) {
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("UPDATE Student SET Password = ?, AssignedPassword = 0 WHERE StudentNumber = ?;");
+            System.out.println(newPassword);
+            preparedStatement.setString(1, newPassword);
+            preparedStatement.setString(2, studentNumber);
+            log("Server> Successfully Changed Password For Student: " + studentNumber);
+            return preparedStatement.executeUpdate() != 0;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            log("Server> changeStudentDefaultPassword> " + ex);
+            return false;
+        }
+    }
+
+    Boolean changeAdminDefaultPassword(String username, String newPassword) {
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("UPDATE Admin SET Password = ?, AssignedPassword = 0 WHERE Username = ?;");
+            System.out.println(newPassword);
+            preparedStatement.setString(1, newPassword);
+            preparedStatement.setString(2, username);
+            log("Server> Successfully Changed Password For Admin: " + username);
+            return preparedStatement.executeUpdate() != 0;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            log("Server> changeStudentDefaultPassword> " + ex);
             return false;
         }
     }
@@ -859,28 +901,28 @@ public class DatabaseHandler {
     //</editor-fold>
 
     //<editor-fold desc="Email Passwords">
-    Boolean emailStudentPassword(String email, String studentNumber) {
+    void emailStudentPassword(String studentNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT Password, StudentNumber From Student WHERE Email = ?;");
-            preparedStatement.setString(1, email);
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT Password, Email FROM Student WHERE StudentNumber = ?;");
+            preparedStatement.setString(1, studentNumber);
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
                 log("Server> Successfully Emailed Password For Student: " + studentNumber);
-                return mail.emailPassword(rs.getString("StudentNumber"), email, rs.getString("Password"));
+                String email = rs.getString("Email");
+                String password = rs.getString("Password");
+                new Thread(() -> mail.emailPassword(studentNumber, email, password)).start();
             } else {
                 log("Server> Failed To Email Password For Student: " + studentNumber);
-                return false;
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> emailStudentPassword> " + ex);
-            return false;
         }
     }
 
     Boolean emailLecturerPassword(String email, String lecturerNumber) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT Password, LecturerID From Lecturer WHERE Email = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT Password, LecturerID FROM Lecturer WHERE Email = ?;");
             preparedStatement.setString(1, email);
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
@@ -894,6 +936,20 @@ public class DatabaseHandler {
             ex.printStackTrace();
             log("Server> emailLecturerPassword> " + ex);
             return false;
+        }
+    }
+
+    void resetAdminPassword(String adminUsername, String email) {
+        try {
+            String newPassword = calculateNewPassword();
+            PreparedStatement preparedStatement = con.prepareStatement("UPDATE Admin SET Password = ?, AssignedPassword = 1 WHERE Username = ?");
+            preparedStatement.setString(1, newPassword);
+            preparedStatement.setString(2, adminUsername);
+            preparedStatement.executeUpdate();
+            Email.resetPassword(adminUsername, email, newPassword);
+            log("Server> resetAdminPassword> Successfully reset " + adminUsername + "'s password");
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
     //</editor-fold>
@@ -1165,7 +1221,7 @@ public class DatabaseHandler {
                             preparedStatement = con.prepareStatement("UPDATE Attendance SET Attendance = ? WHERE StudentNumber = ? AND aDate = ?");
                             preparedStatement.setString(1, classResultAttendances.get(i).getAttendance().get(j).getAttendance());
                             preparedStatement.setString(2, studentNumber);
-                            preparedStatement.setString(3, classResultAttendances.get(i).getAttendance().get(j).getDate());
+                            preparedStatement.setString(3, classResultAttendances.get(i).getAttendance().get(j).getAttendanceDate());
                             preparedStatement.executeQuery().next();
                         }
                         for (int k = 0; k < classResultAttendances.size(); k++) {
@@ -1711,15 +1767,9 @@ public class DatabaseHandler {
 
     void removeNotification(int notificationID) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT Tag FROM Notification WHERE NotificationID = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("DELETE FROM Notification WHERE NotificationID = ?;");
             preparedStatement.setInt(1, notificationID);
-            ResultSet rs = preparedStatement.executeQuery();
-            rs.next();
-            String tag = rs.getString("Tag");
-            preparedStatement = con.prepareStatement("DELETE FROM Notification WHERE NotificationID = ?;");
-            preparedStatement.setInt(1, notificationID);
-            preparedStatement.executeQuery().next();
-            notifyUpdatedNotices(tag);
+            preparedStatement.executeUpdate();
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> removeStudentFromClass> " + ex);
@@ -1750,27 +1800,49 @@ public class DatabaseHandler {
     }
     //</editor-fold>
 
-    private byte[] getDefaultImageBytes() {
-        byte[] defaultImageBytes = new byte[0];
-        try {
-            BufferedImage defaultImage = SwingFXUtils.fromFXImage(new Image(getClass().getClassLoader().getResourceAsStream("DefaultProfile.jpg")), null);
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            ImageIO.write(defaultImage, "jpg", byteArrayOutputStream);
-            byteArrayOutputStream.flush();
-            defaultImageBytes = byteArrayOutputStream.toByteArray();
-            byteArrayOutputStream.close();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return defaultImageBytes;
-    }
-
     private void checkStudentClassesToRemove(String studentNumber, List<ClassResultAttendance> newClasses) {
         List<ClassResultAttendance> regClasses = getStudentClassesResultsAttendance(studentNumber);
         regClasses.removeAll(newClasses);//TODO Test
         for (ClassResultAttendance regClass : regClasses) {
             removeStudentFromClass(studentNumber, regClass.getStudentClass().getClassID());
         }
+    }
+
+    Boolean isDefaultStudentPassword(String studentNumber) {
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student WHERE StudentNumber = ? AND AssignedPassword = 1;");
+            preparedStatement.setString(1, studentNumber);
+            return preparedStatement.executeQuery().next();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            log("Server> isDefaultStudentPassword> " + ex);
+            return false;
+        }
+    }
+
+    Boolean isDefaultAdminPassword(String username) {
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Admin WHERE Username = ? AND AssignedPassword = 1;");
+            preparedStatement.setString(1, username);
+            return preparedStatement.executeQuery().next();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            log("Server> isDefaultAdminPassword> " + ex);
+            return false;
+        }
+    }
+
+    private String calculateNewPassword() {
+        String newPassword = "";
+        for (int i = 0; i < 8; i++) {
+            int random = (int) ((Math.random() * 26) + 65);
+            if (Math.round(Math.random()) == 1) {
+                random += 32;
+            }
+            newPassword += ((char) random) + "";
+        }
+        System.out.println("Random password:" + newPassword);
+        return newPassword;
     }
 
     void log(String logDetails) {

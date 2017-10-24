@@ -9,7 +9,15 @@ import java.util.Properties;
 
 public class Email {
 
-    public Boolean emailPassword(String username, String email, String password) {
+    public static Boolean emailPassword(String username, String email, String password) {
+        return email(email, "CampusLive - Forgot password", "Dear " + username + "\n\nYou requested to send your CampusLive password to your email.\nIf this wasn't you please contact us.\n\nPassword:\t" + password);
+    }
+
+    public static Boolean resetPassword(String username, String email, String password) {
+        return email(email, "CampusLive - Reset password", "Dear " + username + "\n\nYour CampusLive password has been reset.\n\nHere is your new password: \t" + password + "\n\nYou wil be asked to change password upon login\nIf you did not request this reset please contact the admin office");
+    }
+
+    private static Boolean email(String email, String emailSubject, String emailMessage) {
         try {
             Properties props = System.getProperties();
             props.put("mail.smtp.starttls.enable", true);
@@ -23,14 +31,12 @@ public class Email {
             transport.connect("smtp.gmail.com", "campuslive.recovery", "campus.live");
             MimeMessage message = new MimeMessage(session);
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(email));
-            message.setSubject("CampusLive - Forgot password");
-            message.setText("Dear " + username + "\nYou requested to send your CampusLive password to your email.\nIf this wasn't you please contact us.\n\nPassword:\t" + password);
-            System.out.println("test1");
+            message.setSubject(emailSubject);
+            message.setText(emailMessage);
             transport.sendMessage(message, message.getAllRecipients());
-            System.out.println("test2");
             return true;
         } catch (Exception ex) {
-            System.out.println("Server> " + ex);
+            ex.printStackTrace();
             return false;
         }
     }

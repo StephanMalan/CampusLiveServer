@@ -52,10 +52,11 @@ public class ContactDetails implements Serializable {
     }
 
     public Image getImage() {
-        try {
-            return SwingFXUtils.toFXImage(ImageIO.read(new ByteArrayInputStream(imageBytes)), null);
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        if (imageBytes != null) {
+            try {
+                return SwingFXUtils.toFXImage(ImageIO.read(new ByteArrayInputStream(imageBytes)), null);
+            } catch (Exception ex) {
+            }
         }
         return null;
     }

@@ -1,10 +1,7 @@
 package net.ddns.swooosh.campusliveserver.main;
 
 import javafx.beans.InvalidationListener;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import models.all.ContactDetails;
@@ -117,24 +114,28 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                         } else if (text.startsWith("cp:")) {
                             dh.log("Student " + studentNumber + "> Requested Change Password");
                             changePassword(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
+                        } else if (text.startsWith("cdp:")) {
+                            dh.log("Student " + studentNumber + "> Requested Change Default Password");
+                            changeDefaultPassword(text.substring(4));
                         } else if (text.startsWith("sm:")) {
                             dh.log("Student " + studentNumber + "> Send Direct Message to ClassLecturer: " + text.substring(3).split(":")[1] + "> " + text.substring(3).split(":")[0]);
                             sendMessage(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
-                        } else if (text.startsWith("fp:")) {
-                            dh.log("Student " + studentNumber + "> Requested Forgot Password");
-                            forgotPassword(text.substring(3));
                         } else if (text.startsWith("gf:")) {
                             dh.log("Student " + studentNumber + "> Requested File: " + text.substring(3).split(":")[1] + " From class: " + text.substring(3).split(":")[0]);
                             getFile(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
+                        } else if (text.startsWith("idp:")) {
+                            isDefaultPassword();
                         } else if (text.startsWith("lgt:")) {
                             terminateConnection();
                         } else if (text.startsWith("dn:")) {
-
+                            dh.log("Student " + studentNumber + "> Dismissed Notification");
+                            dh.removeNotification(Integer.parseInt(text.substring(3)));
+                            updateNotifications();
                         } else {
                             dh.log("Student " + studentNumber + "> Requested Unknown Command: " + input);
                             System.out.println("Server> Unknown command: " + input);
                         }
-                    }else{}//Object instance of
+                    }
                 }
             }
         }
@@ -187,11 +188,26 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
 
     private void changePassword(String prevPassword, String newPassword) {
         String sPassword = dh.getStudentPassword(studentNumber);
-        if (prevPassword.matches(sPassword)) {
-            dh.changeStudentPassword(studentNumber, newPassword);
+        if (prevPassword.matches(sPassword) && dh.changeStudentPassword(studentNumber, newPassword)) {
             outputQueue.add(0, "cp:y");
         } else {
             outputQueue.add(0, "cp:n");
+        }
+    }
+
+    private void changeDefaultPassword(String newPassword) {
+        if (dh.changeStudentDefaultPassword(studentNumber, newPassword)) {
+            outputQueue.add(0, "cdp:y");
+        } else {
+            outputQueue.add(0, "cdp:n");
+        }
+    }
+
+    private void isDefaultPassword() {
+        if (dh.isDefaultStudentPassword(studentNumber)) {
+            outputQueue.add(0, "idp:y");
+        } else {
+            outputQueue.add(0, "idp:n");
         }
     }
 
@@ -204,14 +220,6 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                     }
                 }
             }
-        }
-    }
-
-    private void forgotPassword(String email) {
-        if (dh.emailStudentPassword(email, studentNumber)) {
-            outputQueue.add(0, "fp:y");
-        } else {
-            outputQueue.add(0, "fp:n");
         }
     }
 
@@ -230,7 +238,6 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         } catch (Exception ex) {
             dh.log("Server> getFile> " + ex);
             ex.printStackTrace();
-            ;
         }
     }
 
@@ -247,18 +254,22 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     }
 
     private void updateNotices() {
+        notices.clear();
         notices.addAll(dh.getNotices(studentNumber, qualification));
     }
 
     private void updateNotifications() {
-        notifications.addAll(dh.getNotifications(studentNumber, qualification));
+        notifications.clear();
+        notifications.addAll(dh.getNotifications(studentNumber));
     }
 
     private void updateContactDetails() {
+        contactDetails.clear();
         contactDetails.addAll(dh.getContactDetails());
     }
 
     private void updateImportantDates() {
+        importantDates.clear();
         importantDates.addAll(dh.getImportantDates());
     }
 
