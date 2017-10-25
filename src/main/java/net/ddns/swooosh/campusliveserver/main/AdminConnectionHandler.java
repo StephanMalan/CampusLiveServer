@@ -26,13 +26,12 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
     private ObservableList<AdminSearch> lecturerSearches = FXCollections.observableArrayList();
     private Lecturer lecturer;
     private ObservableList<AdminSearch> classSearches = FXCollections.observableArrayList();
-    private AdminClass adminClass;
+    private StudentClass adminClass;
     private ObservableList<AdminSearch> contactSearches = FXCollections.observableArrayList();
     private ContactDetails contactDetails;
     private ObservableList<Notice> notices = FXCollections.observableArrayList();
     private ObservableList<Notification> notifications = FXCollections.observableArrayList();
     private ObservableList<ImportantDate> importantDates = FXCollections.observableArrayList();
-    private AdminLog adminLog;
     public volatile BooleanProperty updateAdmins = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateStudents = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateLecturers = new SimpleBooleanProperty(false);
@@ -127,7 +126,10 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                                 outputQueue.add(lecturer);
                             }
                         } else if(text.startsWith("acd:")){
-                            outputQueue.add(dh.getClass(Integer.parseInt(text.substring(4))));
+                            adminClass = dh.getClass(Integer.parseInt(text.substring(4)));
+                            if (adminClass != null) {
+                                outputQueue.add(adminClass);
+                            }
                         } else if(text.startsWith("asl:")){
                             try {
                                 outputQueue.add(new AdminLog(Files.readAllBytes(Server.LOG_FILE.toPath())));
@@ -137,7 +139,10 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                         } else if(text.startsWith("res:")){
                             dh.updateResult(Integer.parseInt(text.split(":")[1]), text.split(":")[2], Integer.parseInt(text.split(":")[3]));
                         } else if(text.startsWith("aci:")){
-                            outputQueue.add(dh.getContactDetailsDetail(text.substring(4)));
+                            contactDetails = dh.getContactDetail(text.substring(4).split(":")[0], text.substring(4).split(":")[1]);
+                            if (contactDetails != null) {
+                                outputQueue.add(contactDetails);
+                            }
                         } else if (text.startsWith("lgt:")) {
                             terminateConnection();
                         } else if (text.startsWith("rs:")){//student
@@ -176,6 +181,8 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                     } else if (input instanceof Student){
                         Student uStudent = (Student) input;
                         dh.updateStudent(uStudent.getStudentNumber(), uStudent.getQualification(), uStudent.getFirstName(), uStudent.getLastName(), uStudent.getEmail(), uStudent.getContactNumber(), uStudent.getClassResultAttendances());
+                    } else if (input instanceof Admin){
+                        dh.updateAdmin((Admin) input);
                     } else if (input instanceof Lecturer){
                         Lecturer uLecturer = (Lecturer) input;
                         dh.updateLecturer(uLecturer.getLecturerNumber(), uLecturer.getFirstName(), uLecturer.getLastName(), uLecturer.getEmail(), uLecturer.getContactNumber());

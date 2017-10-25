@@ -44,4 +44,8 @@ public class StudentClass implements Serializable {
     public List<ClassFile> getFiles() {
         return files;
     }
+
+    public String getClassDetails() {
+        return "Class Id: " + classID + "\nModule Name: " + moduleName + "\nModule Number: " + moduleNumber + "\nLecturer: " + classLecturer.getFirstName() + " " + classLecturer.getFirstName() + " - " + classLecturer.getLecturerID();
+    }
 }

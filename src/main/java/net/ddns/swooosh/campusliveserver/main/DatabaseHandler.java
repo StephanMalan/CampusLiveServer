@@ -389,10 +389,11 @@ public class DatabaseHandler {
         }
     }
 
-    ContactDetails getContactDetailsDetail(String contactDetailsID) {
+    ContactDetails getContactDetail(String name, String position) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM ContactDetails WHERE Name = ?");
-            preparedStatement.setString(1, contactDetailsID);
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM ContactDetails WHERE Name = ? AND Position = ?");
+            preparedStatement.setString(1, name);
+            preparedStatement.setString(2, position);
             ResultSet rs = preparedStatement.executeQuery();
             //log("Server> Successfully Created ClassLecturer: " + lecturerNumber);
             return new ContactDetails(rs.getInt("ContactDetailsID"), rs.getString("Name"), rs.getString("Position"), rs.getString("Department"), rs.getString("ContactNumber"), rs.getString("Email"), getContactImage("ContactDetailsID"));
@@ -670,7 +671,7 @@ public class DatabaseHandler {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT ModuleNumber, ClassID FROM Class");
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
-                classSearches.add(new AdminSearch("Class", rs.getString("ModuleNumber"), rs.getString("ClassID")));
+                classSearches.add(new AdminSearch("Class", rs.getString("ClassID"), rs.getString("ModuleNumber")));
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -1444,6 +1445,25 @@ public class DatabaseHandler {
         }
     }
 
+    void updateAdmin(Admin admin) {
+        try {
+            if (isAdminRegistered(admin.getAdminName())) {
+                PreparedStatement preparedStatement = con.prepareStatement("UPDATE Admin SET Email = ? WHERE Username = ?;");
+                preparedStatement.setString(1, admin.getAdminEmail());
+                preparedStatement.executeQuery().next();
+                notifyAdminUpdate();
+            } else {
+                PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Admin (Username, Email) VALUES (?, ?)");
+                preparedStatement.setString(1, admin.getAdminName());
+                preparedStatement.setString(2, admin.getAdminEmail());
+                preparedStatement.executeUpdate();
+                notifyAdminUpdate();
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
     private Boolean updateAttendance(int attendanceID, int classID, String studentNumber, String aDate, String attendance) {//add
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Attendance SET AttendanceID = ? AND ClassID = ? AND StudentNumber = ? AND ADate = ? AND Attendance = ? WHERE AttendanceID = ?;");
@@ -1466,6 +1486,18 @@ public class DatabaseHandler {
     //</editor-fold>
 
     //<editor-fold desc="Is Registered">
+    private Boolean isAdminRegistered(String username) {
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Admin WHERE Username = ?;");
+            preparedStatement.setString(1, username);
+            return preparedStatement.executeQuery().next();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            log("Server> updateStudent> " + ex);
+            return false;
+        }
+    }
+
     private Boolean isStudentRegistered(String studentNumber) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student WHERE StudentNumber = ?;");
@@ -1631,6 +1663,14 @@ public class DatabaseHandler {
                 ((LecturerConnectionHandler) ch).updateLecturer.setValue(true);
             } else if (ch instanceof StudentConnectionHandler) {
                 ((StudentConnectionHandler) ch).updateStudent.setValue(true);
+            }
+        }
+    }
+
+    private void notifyAdminUpdate() {
+        for (ConnectionHandler ch : Server.connectionsList) {
+            if (ch instanceof AdminConnectionHandler) {
+                ((AdminConnectionHandler) ch).updateAdmins.set(true);
             }
         }
     }

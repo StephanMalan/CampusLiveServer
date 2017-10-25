@@ -86,80 +86,82 @@ public class Server {
                 objectOutputStream = new ObjectOutputStream(s.getOutputStream());
                 StopClass:
                 while (true) {
-                    String input;
+                    Object inputObject;
                     try {
-                        while ((input = objectInputStream.readUTF()) == null) ;
-                        System.out.println("test: " + input); //TODO
-                        if (input.startsWith("saf:")) {
-                            dh.log("Server> Authorising Student : " + input.substring(4).split(":")[0]);
-                            if (authoriseStudent(input.substring(4).split(":")[0], input.substring(4).split(":")[1])) {
-                                dh.log("Server> Authorised Student : " + input.substring(4).split(":")[0]);
-                                objectOutputStream.writeObject("saf:y");
-                                objectOutputStream.flush();
-                                StudentConnectionHandler studentConnectionHandler = new StudentConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(4).split(":")[0], connectionsList, dh);
-                                Thread t = new Thread(studentConnectionHandler);
-                                t.start();
-                                connectionsList.add(studentConnectionHandler);
-                                break StopClass;
-                            } else {
-                                dh.log("Server> Authorising Student : " + input.substring(3).split(":")[0] + " Failed");
-                                objectOutputStream.writeObject("saf:n");
-                                objectOutputStream.flush();
-                            }
-                        } else if (input.startsWith("san:")) {
-                            dh.log("Server> Authorising Student Off-Campus: " + input.substring(4).split(":")[0]);
-                            if (authoriseStudent(input.substring(4).split(":")[0], input.substring(4).split(":")[1])) {
-                                dh.log("Server> Authorised Student Off-Campus: " + input.substring(4).split(":")[0]);
-                                objectOutputStream.writeObject("san:y");
-                                objectOutputStream.flush();
+                        while ((inputObject = objectInputStream.readObject()) == null) ;
+                        if (inputObject instanceof String) {
+                            String input = (String) inputObject;
+                            if (input.startsWith("saf:")) {
+                                dh.log("Server> Authorising Student : " + input.substring(4).split(":")[0]);
+                                if (authoriseStudent(input.substring(4).split(":")[0], input.substring(4).split(":")[1])) {
+                                    dh.log("Server> Authorised Student : " + input.substring(4).split(":")[0]);
+                                    objectOutputStream.writeObject("saf:y");
+                                    objectOutputStream.flush();
+                                    StudentConnectionHandler studentConnectionHandler = new StudentConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(4).split(":")[0], connectionsList, dh);
+                                    Thread t = new Thread(studentConnectionHandler);
+                                    t.start();
+                                    connectionsList.add(studentConnectionHandler);
+                                    break StopClass;
+                                } else {
+                                    dh.log("Server> Authorising Student : " + input.substring(3).split(":")[0] + " Failed");
+                                    objectOutputStream.writeObject("saf:n");
+                                    objectOutputStream.flush();
+                                }
+                            } else if (input.startsWith("san:")) {
+                                dh.log("Server> Authorising Student Off-Campus: " + input.substring(4).split(":")[0]);
+                                if (authoriseStudent(input.substring(4).split(":")[0], input.substring(4).split(":")[1])) {
+                                    dh.log("Server> Authorised Student Off-Campus: " + input.substring(4).split(":")[0]);
+                                    objectOutputStream.writeObject("san:y");
+                                    objectOutputStream.flush();
 
-                                //DropBox Details
+                                    //DropBox Details
 
                             /*StudentConnectionHandler studentConnectionHandler = new StudentConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(3).split(":")[0], connectionsList);
                             Thread t = new Thread(studentConnectionHandler);
                             t.start();
                             connectionsList.add(studentConnectionHandler);*/
-                                break StopClass;
-                            } else {
-                                dh.log("Server> Authorising Student : " + input.substring(3).split(":")[0] + " Failed");
-                                objectOutputStream.writeObject("san:n");
-                                objectOutputStream.flush();
+                                    break StopClass;
+                                } else {
+                                    dh.log("Server> Authorising Student : " + input.substring(3).split(":")[0] + " Failed");
+                                    objectOutputStream.writeObject("san:n");
+                                    objectOutputStream.flush();
+                                }
+                            } else if (input.startsWith("la:")) {
+                                dh.log("Server> Authorising Lecturer : " + input.substring(3).split(":")[0]);
+                                if (authoriseLecturer(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
+                                    dh.log("Server> Authorised Lecturer : " + input.substring(3).split(":")[0]);
+                                    objectOutputStream.writeObject("la:y");
+                                    objectOutputStream.flush();
+                                    LecturerConnectionHandler lecturerConnectionHandler = new LecturerConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(3).split(":")[0], connectionsList, dh);
+                                    Thread t = new Thread(lecturerConnectionHandler);
+                                    t.start();
+                                    connectionsList.add(lecturerConnectionHandler);
+                                    break StopClass;
+                                } else {
+                                    dh.log("Server> Authorising Lecturer : " + input.substring(3).split(":")[0] + " Failed");
+                                    objectOutputStream.writeObject("la:n");
+                                    objectOutputStream.flush();
+                                }
+                            } else if (input.startsWith("aa:")) {
+                                dh.log("Server> Authorising Admin : " + input.substring(3).split(":")[0]);
+                                if (authoriseAdmin(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
+                                    dh.log("Server> Authorised Admin : " + input.substring(3).split(":")[0]);
+                                    objectOutputStream.writeObject("aa:y");
+                                    objectOutputStream.flush();
+                                    AdminConnectionHandler adminConnectionHandler = new AdminConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(3).split(":")[0], connectionsList, dh);
+                                    Thread t = new Thread(adminConnectionHandler);
+                                    t.start();
+                                    connectionsList.add(adminConnectionHandler);
+                                    break StopClass;
+                                } else {
+                                    dh.log("Server> Authorising Admin : " + input.substring(3).split(":")[0] + " Failed");
+                                    objectOutputStream.writeObject("aa:n");
+                                    objectOutputStream.flush();
+                                }
+                            } else if (input.startsWith("fsp:")) {
+                                dh.log("Student > Requested Forgot Password");
+                                dh.emailStudentPassword(input.substring(4));
                             }
-                        } else if (input.startsWith("la:")) {
-                            dh.log("Server> Authorising Lecturer : " + input.substring(3).split(":")[0]);
-                            if (authoriseLecturer(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
-                                dh.log("Server> Authorised Lecturer : " + input.substring(3).split(":")[0]);
-                                objectOutputStream.writeObject("la:y");
-                                objectOutputStream.flush();
-                                LecturerConnectionHandler lecturerConnectionHandler = new LecturerConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(3).split(":")[0], connectionsList, dh);
-                                Thread t = new Thread(lecturerConnectionHandler);
-                                t.start();
-                                connectionsList.add(lecturerConnectionHandler);
-                                break StopClass;
-                            } else {
-                                dh.log("Server> Authorising Lecturer : " + input.substring(3).split(":")[0] + " Failed");
-                                objectOutputStream.writeObject("la:n");
-                                objectOutputStream.flush();
-                            }
-                        } else if (input.startsWith("aa:")) {
-                            dh.log("Server> Authorising Admin : " + input.substring(3).split(":")[0]);
-                            if (authoriseAdmin(input.substring(3).split(":")[0], input.substring(3).split(":")[1])) {
-                                dh.log("Server> Authorised Admin : " + input.substring(3).split(":")[0]);
-                                objectOutputStream.writeObject("aa:y");
-                                objectOutputStream.flush();
-                                AdminConnectionHandler adminConnectionHandler = new AdminConnectionHandler(s, objectInputStream, objectOutputStream, input.substring(3).split(":")[0], connectionsList, dh);
-                                Thread t = new Thread(adminConnectionHandler);
-                                t.start();
-                                connectionsList.add(adminConnectionHandler);
-                                break StopClass;
-                            } else {
-                                dh.log("Server> Authorising Admin : " + input.substring(3).split(":")[0] + " Failed");
-                                objectOutputStream.writeObject("aa:n");
-                                objectOutputStream.flush();
-                            }
-                        } else if (input.startsWith("fsp:")) {
-                            dh.log("Student > Requested Forgot Password");
-                            dh.emailStudentPassword(input.substring(4));
                         }
                     } catch (SocketException e) {
                         dh.log("Server> User Disconnected");
