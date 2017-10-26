@@ -1,7 +1,5 @@
 package net.ddns.swooosh.campusliveserver.main;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import models.admin.Admin;
 import models.admin.AdminSearch;
 import models.all.*;
@@ -394,14 +392,14 @@ public class DatabaseHandler {
         }
     }
 
-    ObservableList<Notice> getNotices(String studentNumber, String qualification) {
+    List<Notice> getNotices(String studentNumber, String qualification) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Notice WHERE Tag = ? OR Tag = ? OR Tag = ?;");
             preparedStatement.setString(1, studentNumber);
             preparedStatement.setString(2, qualification);
             preparedStatement.setString(3, "Campus");
             ResultSet rs = preparedStatement.executeQuery();
-            ObservableList<Notice> notices = FXCollections.observableArrayList();
+            List<Notice> notices = new ArrayList<>();
             while (rs.next()) {
                 Notice newNotice = new Notice(rs.getInt("NoticeID"), rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag"), rs.getString("ExpiryDate"));
                 notices.add(newNotice);
@@ -418,9 +416,9 @@ public class DatabaseHandler {
         }
     }
 
-    ObservableList<Notification> getNotifications(String studentNumber) {
+    List<Notification> getNotifications(String studentNumber) {
         try {
-            ObservableList<Notification> notifications = FXCollections.observableArrayList();
+            List<Notification> notifications = new ArrayList<>();
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Notification WHERE Tag = ?;");
             preparedStatement.setString(1, studentNumber);
             ResultSet rs = preparedStatement.executeQuery();
@@ -439,11 +437,11 @@ public class DatabaseHandler {
         }
     }
 
-    ObservableList<ContactDetails> getContactDetails() {
+    List<ContactDetails> getContactDetails() {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM ContactDetails;");
             ResultSet rs = preparedStatement.executeQuery();
-            ObservableList<ContactDetails> contactDetails = FXCollections.observableArrayList();
+            List<ContactDetails> contactDetails = new ArrayList<>();
             while (rs.next()) {
                 ContactDetails newContactDetail = new ContactDetails(rs.getInt("ContactDetailsID"), rs.getString("Name"), rs.getString("Position"), rs.getString("Department"), rs.getString("ContactNumber"), rs.getString("Email"), getContactImage(rs.getString("ContactDetailsID")));
                 contactDetails.add(newContactDetail);
@@ -469,11 +467,11 @@ public class DatabaseHandler {
         return null;
     }
 
-    ObservableList<ImportantDate> getImportantDates() {
+    List<ImportantDate> getImportantDates() {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM ImportantDate ORDER BY IDate;");
             ResultSet rs = preparedStatement.executeQuery();
-            ObservableList<ImportantDate> importantDates = FXCollections.observableArrayList();
+            List<ImportantDate> importantDates = new ArrayList<>();
             while (rs.next()) {
                 ImportantDate newImportantDate = new ImportantDate(rs.getInt("ImportantDateID"), rs.getString("IDate"), rs.getString("Description"));
                 importantDates.add(newImportantDate);
@@ -520,7 +518,7 @@ public class DatabaseHandler {
 
     List<ContactDetails> getStudentContactDetails(String lecturerNumber) {
         List<LecturerClass> classes = getLecturerClasses(lecturerNumber);
-        ObservableList<ContactDetails> contactDetails = FXCollections.observableArrayList();
+        List<ContactDetails> contactDetails = new ArrayList<>();
         for (LecturerClass aClass : classes) {
             try {
                 PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student, Registered, Class WHERE Student.StudentNumber = Registered.StudentNumber AND Class.ClassID = Registered.ClassID AND Class.ClassID = ?;");
@@ -600,7 +598,7 @@ public class DatabaseHandler {
     }
 
     List<Admin> getAllAdmins() {
-        List<Admin> admins = FXCollections.observableArrayList();
+        List<Admin> admins = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Admin;");
             ResultSet rs = preparedStatement.executeQuery();
@@ -684,7 +682,7 @@ public class DatabaseHandler {
     }
 
     List<Notice> getAllNotices() {
-        List<Notice> notices = FXCollections.observableArrayList();
+        List<Notice> notices = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Notice;");
             ResultSet rs = preparedStatement.executeQuery();
@@ -700,9 +698,10 @@ public class DatabaseHandler {
     }
 
     List<ResultTemplate> getResultTemplates(int classId) {
-        List<ResultTemplate> resultTemplates = FXCollections.observableArrayList();
+        List<ResultTemplate> resultTemplates = new ArrayList<>();
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM ResultTemplate;");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM ResultTemplate WHERE ClassID = ?;");
+            preparedStatement.setInt(1, classId);
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
                 resultTemplates.add(new ResultTemplate(rs.getInt("ResultTemplateID"), classId, rs.getInt("ResultMax"), rs.getInt("DPWeight"), rs.getInt("FinalWeight"), rs.getString("ResultName")));
@@ -716,7 +715,7 @@ public class DatabaseHandler {
     }
 
     List<Notification> getAllNotifications() {
-        List<Notification> notifications = FXCollections.observableArrayList();
+        List<Notification> notifications = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Notification;");
             ResultSet rs = preparedStatement.executeQuery();
@@ -732,7 +731,7 @@ public class DatabaseHandler {
     }
 
     List<LecturerStudentAttendance> getAllStudentsInClassAttendance(String lecturerNumber) {//TODO Test
-        ObservableList<LecturerStudentAttendance> studentsAttendance = FXCollections.observableArrayList();
+        List<LecturerStudentAttendance> studentsAttendance = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student, Registered, Class WHERE Student.StudentNumber = Registered.StudentNumber AND Class.ClassID = Registered.ClassID AND Class.LecturerID = ?;");
             preparedStatement.setString(1, lecturerNumber);
@@ -753,7 +752,7 @@ public class DatabaseHandler {
     }
 
     private List<LecturerStudentAttendanceClass> getStudentsInClassAttendanceClasses(String studentNumber, String lecturerNumber) {
-        ObservableList<LecturerStudentAttendanceClass> studentsInClassAttendanceClasses = FXCollections.observableArrayList();
+        List<LecturerStudentAttendanceClass> studentsInClassAttendanceClasses = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Class, Registered WHERE Registered.StudentNumber = ? AND Registered.ClassID = Class.ClassID AND Class.LecturerID = ?;");
             preparedStatement.setString(1, studentNumber);
@@ -770,7 +769,7 @@ public class DatabaseHandler {
     }
 
     private List<Attendance> getStudentsInClassAttendanceAttendance(String studentNumber, int classID) {
-        ObservableList<Attendance> studentsInClassAttendanceAttendance = FXCollections.observableArrayList();
+        List<Attendance> studentsInClassAttendanceAttendance = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Attendance WHERE ClassID = ? AND StudentNumber = ?;");
             preparedStatement.setInt(1, classID);
@@ -786,7 +785,7 @@ public class DatabaseHandler {
     }
 
     List<LecturerStudentResult> getAllStudentsInClassResults(String lecturerNumber) {//TODO Test
-        ObservableList<LecturerStudentResult> addStudentsResults = FXCollections.observableArrayList();
+        List<LecturerStudentResult> addStudentsResults = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student, Registered, Class WHERE Student.StudentNumber = Registered.StudentNumber AND Class.ClassID = Registered.ClassID AND Class.LecturerID = ?;");
             preparedStatement.setString(1, lecturerNumber);
@@ -807,7 +806,7 @@ public class DatabaseHandler {
     }
 
     private List<LecturerStudentResultClass> getStudentsInClassResultsClasses(String studentNumber, String lecturerNumber) {
-        ObservableList<LecturerStudentResultClass> studentsInClassResultsClasses = FXCollections.observableArrayList();
+        List<LecturerStudentResultClass> studentsInClassResultsClasses = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Class, Registered WHERE Registered.StudentNumber = ? AND Registered.ClassID = Class.ClassID AND Class.LecturerID = ?;");
             preparedStatement.setString(1, studentNumber);
@@ -824,7 +823,7 @@ public class DatabaseHandler {
     }
 
     private List<Result> getStudentsInClassResultsResults(String studentNumber, int classID) {
-        ObservableList<Result> studentsInClassResultsResults = FXCollections.observableArrayList();
+        List<Result> studentsInClassResultsResults = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Result, ResultTemplate WHERE Result.ResultTemplateID = ResultTemplate.ResultTemplateID AND Result.StudentNumber = ? AND ResultTemplate.ClassID = ?;");
             preparedStatement.setString(1, studentNumber);
@@ -1553,7 +1552,8 @@ public class DatabaseHandler {
             if (isAdminRegistered(admin.getAdminName())) {
                 PreparedStatement preparedStatement = con.prepareStatement("UPDATE Admin SET Email = ? WHERE Username = ?;");
                 preparedStatement.setString(1, admin.getAdminEmail());
-                preparedStatement.executeQuery().next();
+                preparedStatement.setString(2, admin.getAdminName());
+                preparedStatement.executeUpdate();
                 notifyAdminUpdate();
             } else {
                 PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Admin (Username, Email) VALUES (?, ?)");

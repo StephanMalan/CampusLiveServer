@@ -1,6 +1,8 @@
 package models.all;
 
-public class ResultTemplate {
+import java.io.Serializable;
+
+public class ResultTemplate implements Serializable{
 
     private int id;
     private int classID;

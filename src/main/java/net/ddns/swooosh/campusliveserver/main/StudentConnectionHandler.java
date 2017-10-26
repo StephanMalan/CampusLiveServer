@@ -164,6 +164,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     public void sendData(Object data) {
         try {
             synchronized (objectOutputStream) {
+                System.out.println(data);
                 objectOutputStream.writeObject(data);
                 objectOutputStream.flush();
                 objectOutputStream.reset();

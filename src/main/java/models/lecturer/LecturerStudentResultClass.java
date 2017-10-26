@@ -2,9 +2,10 @@ package models.lecturer;
 
 import models.all.Result;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class LecturerStudentResultClass {
+public class LecturerStudentResultClass implements Serializable{
 
     private int classID;
     private List<Result> results;

@@ -1,8 +1,9 @@
 package models.lecturer;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class LecturerStudentAttendance {
+public class LecturerStudentAttendance implements Serializable {
 
     private String studentFirstName;
     private String studentLastName;

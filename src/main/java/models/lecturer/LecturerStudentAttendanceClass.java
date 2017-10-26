@@ -2,9 +2,10 @@ package models.lecturer;
 
 import models.all.Attendance;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class LecturerStudentAttendanceClass {
+public class LecturerStudentAttendanceClass implements Serializable {
 
     private int classID;
     private List<Attendance> attendance;
