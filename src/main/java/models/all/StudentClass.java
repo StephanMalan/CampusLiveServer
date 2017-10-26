@@ -11,14 +11,16 @@ public class StudentClass implements Serializable {
     private ClassLecturer classLecturer;
     private List<ClassTime> classTimes;
     private List<ClassFile> files;
+    private List<ResultTemplate> resultTemplates;
 
-    public StudentClass(int classID, String moduleName, String moduleNumber, ClassLecturer classLecturer, List<ClassTime> classTimes, List<ClassFile> files) {
+    public StudentClass(int classID, String moduleName, String moduleNumber, ClassLecturer classLecturer, List<ClassTime> classTimes, List<ClassFile> files, List<ResultTemplate> resultTemplates) {
         this.classID = classID;
         this.moduleName = moduleName;
         this.moduleNumber = moduleNumber;
         this.classLecturer = classLecturer;
         this.classTimes = classTimes;
         this.files = files;
+        this.resultTemplates = resultTemplates;
     }
 
     public int getClassID() {
@@ -43,6 +45,10 @@ public class StudentClass implements Serializable {
 
     public List<ClassFile> getFiles() {
         return files;
+    }
+
+    public List<ResultTemplate> getResultTemplates() {
+        return resultTemplates;
     }
 
     public String getClassDetails() {

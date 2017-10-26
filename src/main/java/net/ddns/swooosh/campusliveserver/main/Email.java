@@ -17,6 +17,10 @@ public class Email {
         return email(email, "CampusLive - Reset password", "Dear " + username + "\n\nYour CampusLive password has been reset.\n\nHere is your new password: \t" + password + "\n\nYou wil be asked to change password upon login\nIf you did not request this reset please contact the admin office");
     }
 
+    public static Boolean initPassword(String username, String email, String password) {
+        return email(email, "CampusLive - Registered", "Dear " + username + "\n\nYour CampusLive account has been created.\n\nHere is your password: \t" + password + "\n\nYou wil be asked to change password upon login\nIf this is not you, please ignore this message");
+    }
+
     private static Boolean email(String email, String emailSubject, String emailMessage) {
         try {
             Properties props = System.getProperties();

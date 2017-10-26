@@ -5,12 +5,18 @@ import java.util.Date;
 
 public class ImportantDate implements Serializable {
 
+    private int id;
     private String date;
     private String description;
 
-    public ImportantDate(String date, String description) {
+    public ImportantDate(int id, String date, String description) {
+        this.id = id;
         this.date = date;
         this.description = description;
+    }
+
+    public int getId() {
+        return id;
     }
 
     public String getDate() {
@@ -20,5 +26,4 @@ public class ImportantDate implements Serializable {
     public String getDescription() {
         return description;
     }
-
 }

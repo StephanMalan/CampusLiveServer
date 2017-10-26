@@ -51,11 +51,14 @@ public class ContactDetails implements Serializable {
         return email;
     }
 
+    public byte[] getImageBytes() {
+        return imageBytes;
+    }
+
     public Image getImage() {
         try {
             return SwingFXUtils.toFXImage(ImageIO.read(new ByteArrayInputStream(imageBytes)), null);
         } catch (Exception ex) {
-            ex.printStackTrace();
         }
         return null;
     }

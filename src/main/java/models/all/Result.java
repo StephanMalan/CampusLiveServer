@@ -49,4 +49,8 @@ public class Result implements Serializable {
     public double getFinalWeight() {
         return finalWeight;
     }
+
+    public void setResult(double result) {
+        this.result = result;
+    }
 }

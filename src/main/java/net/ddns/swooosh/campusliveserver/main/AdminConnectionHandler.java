@@ -26,7 +26,7 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
     private ObservableList<AdminSearch> lecturerSearches = FXCollections.observableArrayList();
     private Lecturer lecturer;
     private ObservableList<AdminSearch> classSearches = FXCollections.observableArrayList();
-    private StudentClass adminClass;
+    private StudentClass studentClass;
     private ObservableList<AdminSearch> contactSearches = FXCollections.observableArrayList();
     private ContactDetails contactDetails;
     private ObservableList<Notice> notices = FXCollections.observableArrayList();
@@ -113,97 +113,101 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
             while (running.get()) {
                 Object input;
                 if ((input = getReply()) != null) {
-                    if(input instanceof String) {
+                    if (input instanceof String) {
                         String text = input.toString();
-                        if (text.startsWith("asd:")) {
+                        if (text.startsWith("asd:")) { //request student
                             student = dh.getStudent(text.substring(4));
                             if (student != null) {
                                 outputQueue.add(student);
                             }
-                        } else if(text.startsWith("ald:")){
+                        } else if (text.startsWith("ald:")) { //request lecturer
                             lecturer = dh.getLecturer(text.substring(4));
                             if (lecturer != null) {
                                 outputQueue.add(lecturer);
                             }
-                        } else if(text.startsWith("acd:")){
-                            adminClass = dh.getClass(Integer.parseInt(text.substring(4)));
-                            if (adminClass != null) {
-                                outputQueue.add(adminClass);
+                        } else if (text.startsWith("acd:")) { //request class
+                            studentClass = dh.getClass(Integer.parseInt(text.substring(4)));
+                            if (studentClass != null) {
+                                outputQueue.add(studentClass);
                             }
-                        } else if(text.startsWith("asl:")){
+                        } else if (text.startsWith("asl:")) { //request log
                             try {
                                 outputQueue.add(new AdminLog(Files.readAllBytes(Server.LOG_FILE.toPath())));
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
-                        } else if(text.startsWith("res:")){
-                            dh.updateResult(Integer.parseInt(text.split(":")[1]), text.split(":")[2], Integer.parseInt(text.split(":")[3]));
-                        } else if(text.startsWith("aci:")){
+                        } else if (text.startsWith("aci:")) { //request contact details
                             contactDetails = dh.getContactDetail(text.substring(4).split(":")[0], text.substring(4).split(":")[1]);
                             if (contactDetails != null) {
                                 outputQueue.add(contactDetails);
                             }
-                        } else if (text.startsWith("lgt:")) {
-                            terminateConnection();
-                        } else if (text.startsWith("rs:")){//student
+                        } else if (text.startsWith("rs:")) { //remove student
                             dh.removeStudent(text.substring(3));
-                        } else if (text.startsWith("rl:")){//lecturer
+                        } else if (text.startsWith("rl:")) { //remove lecturer
                             dh.removeLecturer(text.substring(3));
-                        } else if (text.startsWith("rc:")){//class
+                        } else if (text.startsWith("rc:")) { //remove class
                             dh.removeClass(Integer.parseInt(text.substring(3)));
-                        } else if (text.startsWith("rr:")){//resultTemplate
+                        } else if (text.startsWith("ra:")) { //remove attendance
+                            dh.removeAttendance(Integer.parseInt(text.substring(3)));
+                        } else if (text.startsWith("rr:")) { //remove result template
                             dh.removeResultTemplate(Integer.parseInt(text.substring(3)));
-                        } else if (text.startsWith("rn:")){//notice
+                        } else if (text.startsWith("rn:")) { //remove notice
                             dh.removeNotice(Integer.parseInt(text.substring(3)));
-                        } else if (text.startsWith("rf:")){//notification
+                        } else if (text.startsWith("rf:")) { //remove notification
                             dh.removeNotification(Integer.parseInt(text.substring(3)));
-                        } else if (text.startsWith("rd:")){//contact details
+                        } else if (text.startsWith("rd:")) { //remove contact details
                             dh.removeContactDetails(Integer.parseInt(text.substring(3)));
-                        } else if (text.startsWith("ri:")){//important dates
+                        } else if (text.startsWith("ri:")) { //remove important dates
                             dh.removeImportantDate(Integer.parseInt(text.substring(3)));
-                        } else if (text.startsWith("uc:")){//unregister class
+                        } else if (text.startsWith("rct:")) { //remove class time
+                            dh.removeClassTime(Integer.parseInt(text.substring(3)));
+                        } else if (text.startsWith("uc:")) { //unregister class
                             dh.removeStudentFromClass(text.split(":")[1], Integer.parseInt(text.split(":")[2]));
                             outputQueue.add(dh.getStudent(student.getStudentNumber()));
-                        } else if (text.startsWith("rsc:")){//register class
+                        } else if (text.startsWith("rsc:")) { //register class
                             dh.addStudentToClass(text.split(":")[1], Integer.parseInt(text.split(":")[2]));
                             outputQueue.add(dh.getStudent(student.getStudentNumber()));
-                        } else if (text.startsWith("gac:")){//get all classes
+                        } else if (text.startsWith("gac:")) { //get all classes
                             outputQueue.add(dh.getAllStudentClasses());
-                        } else if (text.startsWith("rap:")){//reset admin password
+                        } else if (text.startsWith("rap:")) { //reset admin password
                             dh.resetAdminPassword(text.split(":")[1], text.split(":")[2]);
-                        } else if (text.startsWith("idp:")){//is default password
+                        } else if (text.startsWith("rsp:")) { //reset student password
+                            dh.resetStudentPassword(text.split(":")[1], text.split(":")[2]);
+                        } else if (text.startsWith("rlp:")) { //reset lecturer password
+                            dh.resetLecturerPassword(text.split(":")[1], text.split(":")[2]);
+                        } else if (text.startsWith("idp:")) { //is default password
                             isDefaultPassword();
-                        } else if (text.startsWith("cdp:")){//reset admin password
-                           changeDefaultPassword(text.substring(4));
+                        } else if (text.startsWith("cdp:")) {//reset admin password
+                            changeDefaultPassword(text.substring(4));
+                        } else if (text.startsWith("rse:")) {//register supplementary examination
+                            dh.regSuppExam(text.split(":")[1], Integer.parseInt(text.split(":")[2]));
                         } else {
                             dh.log("Admin " + username + "> Requested Unknown Command: " + input);
                         }
-                    } else if (input instanceof Student){
-                        Student uStudent = (Student) input;
-                        dh.updateStudent(uStudent.getStudentNumber(), uStudent.getQualification(), uStudent.getFirstName(), uStudent.getLastName(), uStudent.getEmail(), uStudent.getContactNumber(), uStudent.getClassResultAttendances());
-                    } else if (input instanceof Admin){
+                    } else if (input instanceof Student) {
+                        dh.updateStudent((Student) input);
+                    } else if (input instanceof Admin) {
                         dh.updateAdmin((Admin) input);
-                    } else if (input instanceof Lecturer){
-                        Lecturer uLecturer = (Lecturer) input;
-                        dh.updateLecturer(uLecturer.getLecturerNumber(), uLecturer.getFirstName(), uLecturer.getLastName(), uLecturer.getEmail(), uLecturer.getContactNumber());
-                    } else if (input instanceof Class){
-                        AdminClass uClass = (AdminClass) input;
-                        dh.updateClass(uClass.getClassID(), uClass.getModuleName(), uClass.getModuleNumber(), uClass.getLecturerNumber(), uClass.getClassTime());
-                    } else if (input instanceof Notification){
-                        Notification uNotification = (Notification) input;
-                        dh.updateNotification(uNotification.getId(), uNotification.getHeading(), uNotification.getDescription(), uNotification.getTag());
-                    } else if (input instanceof Notification){
-                        Notice uNotice = (Notice) input;
-                        dh.updateNotice(uNotice.getId(), uNotice.getHeading(), uNotice.getDescription(), uNotice.getExpiryDate(), uNotice.getTag());
-                    } else if (input instanceof Result){
-                        Result uResult = (Result) input;
-                        dh.updateResult(uResult.getResultTemplateID(), uResult.getStudentNumber(), (int) uResult.getResult());
-                    } else if (input instanceof ResultTemplate){//-1 id = new
-                        ResultTemplate uResultTemplate = (ResultTemplate) input;
-                        dh.updateResultTemplate(uResultTemplate.getId(), uResultTemplate.getClassID(), uResultTemplate.getResultMax(), uResultTemplate.getDpWeight(), uResultTemplate.getFinalWeight(), uResultTemplate.getResultName());
-                    } else if(input instanceof ContactDetails){
-                        ContactDetails nContactDetails = (ContactDetails) input;
-                        dh.updateContactDetails(nContactDetails.getId(), nContactDetails.getName(), nContactDetails.getPosition(), nContactDetails.getDepartment(), nContactDetails.getContactNumber(), nContactDetails.getEmail());
+                    } else if (input instanceof Attendance) {
+                        dh.updateAttendance((Attendance) input);
+                    } else if (input instanceof Lecturer) {
+                        dh.updateLecturer((Lecturer) input);
+                    } else if (input instanceof StudentClass) {
+                        dh.updateClass((StudentClass) input);
+                    } else if (input instanceof ClassTime) {
+                        dh.updateClassTime((ClassTime) input);
+                    } else if (input instanceof Notification) {
+                        dh.updateNotification((Notification) input);
+                    } else if (input instanceof Notice) {
+                        dh.updateNotice((Notice) input);
+                    } else if (input instanceof ImportantDate) {
+                        dh.updateDate((ImportantDate) input);
+                    } else if (input instanceof Result) {
+                        dh.updateResult((Result) input);
+                    } else if (input instanceof ResultTemplate) {
+                        dh.updateResultTemplate((ResultTemplate) input);
+                    } else if (input instanceof ContactDetails) {
+                        dh.updateContactDetails((ContactDetails) input);
                     }
                 }
             }
