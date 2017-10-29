@@ -24,7 +24,6 @@ import java.util.List;
 public class DatabaseHandler {
 
     private Connection con;
-    private Email mail = new Email();
 
     DatabaseHandler() {
         connectDB();
@@ -131,7 +130,7 @@ public class DatabaseHandler {
     //</editor-fold>
 
     //<editor-fold desc="Authorisation">
-    protected Boolean authoriseStudent(String studentNumber, String password) {
+    Boolean authoriseStudent(String studentNumber, String password) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Student WHERE StudentNumber = ? AND Password = ?");
             preparedStatement.setString(1, studentNumber);
@@ -384,7 +383,7 @@ public class DatabaseHandler {
             preparedStatement.setString(2, position);
             ResultSet rs = preparedStatement.executeQuery();
             //log("Server> Successfully Created ClassLecturer: " + lecturerNumber);
-            return new ContactDetails(rs.getInt("ContactDetailsID"), rs.getString("Name"), rs.getString("Position"), rs.getString("Department"), rs.getString("ContactNumber"), rs.getString("Email"), getContactImage("ContactDetailsID"));
+            return new ContactDetails(rs.getInt("ContactDetailsID"), rs.getString("Name"), rs.getString("Position"), rs.getString("Department"), rs.getString("ContactNumber"), rs.getString("Email"), getContactImage(rs.getString("ContactDetailsID")));
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> getClassLecturer> " + ex);
@@ -525,7 +524,7 @@ public class DatabaseHandler {
                 preparedStatement.setInt(1, aClass.getId());
                 ResultSet rs = preparedStatement.executeQuery();
                 while (rs.next()) {
-                    ContactDetails newContactDetail = new ContactDetails(0, rs.getString("FirstName") + " " + rs.getString("LastName"), rs.getString("StudentNumber"), "Student", rs.getString("ContactNumber"), rs.getString("Email"), null);//TODO send null bytes
+                    ContactDetails newContactDetail = new ContactDetails(0, rs.getString("FirstName") + " " + rs.getString("LastName"), rs.getString("StudentNumber"), "Student", rs.getString("ContactNumber"), rs.getString("Email"), null);
                     if (!contactDetails.contains(newContactDetail)) {
                         contactDetails.add(newContactDetail);
                     }
@@ -546,10 +545,7 @@ public class DatabaseHandler {
             preparedStatement.setString(1, lecturerNumber);
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
-                PreparedStatement preparedStatement2 = con.prepareStatement("SELECT ClassTimeID FROM ClassTime WHERE ClassID = ?");
-                preparedStatement2.setInt(1, rs.getInt("ClassID"));
-                ResultSet rs2 = preparedStatement2.executeQuery();
-                classes.add(new LecturerClass(rs2.getInt("ClassTimeID"), rs.getString("ModuleName"), rs.getString("ModuleNumber"), getClassTimes(rs.getInt("ClassID")), getFiles(rs.getInt("ClassID"))));
+                classes.add(new LecturerClass(rs.getInt("ClassID"), rs.getString("ModuleName"), rs.getString("ModuleNumber"), getClassTimes(rs.getInt("ClassID")), getFiles(rs.getInt("ClassID"))));
             }
             log("Server> Successfully Gotten Classes For ClassLecturer: " + lecturerNumber);
             return classes;
@@ -697,7 +693,7 @@ public class DatabaseHandler {
         }
     }
 
-    List<ResultTemplate> getResultTemplates(int classId) {
+    private List<ResultTemplate> getResultTemplates(int classId) {
         List<ResultTemplate> resultTemplates = new ArrayList<>();
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM ResultTemplate WHERE ClassID = ?;");
@@ -884,17 +880,16 @@ public class DatabaseHandler {
         }
     }
 
-    Boolean changeLecturerPassword(String lecturerNumber, String newPassword) {
+    void changeLecturerPassword(String lecturerNumber, String newPassword) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Lecturer SET Password = ? WHERE LecturerID = ?;");
             preparedStatement.setString(1, newPassword);
             preparedStatement.setString(2, lecturerNumber);
             log("Server> Successfully Changed Password For ClassLecturer: " + lecturerNumber);
-            return preparedStatement.execute();
+            preparedStatement.execute();
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> changePasswordLecturer> " + ex);
-            return false;
         }
     }
 
@@ -910,7 +905,7 @@ public class DatabaseHandler {
                 log("Server> Successfully Emailed Password For Student: " + studentNumber);
                 String email = rs.getString("Email");
                 String password = rs.getString("Password");
-                new Thread(() -> mail.emailPassword(studentNumber, email, password)).start();
+                new Thread(() -> Email.emailPassword(studentNumber, email, password)).start();
             } else {
                 log("Server> Failed To Email Password For Student: " + studentNumber);
             }
@@ -927,7 +922,7 @@ public class DatabaseHandler {
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
                 log("Server> Successfully Emailed Password For ClassLecturer: " + lecturerNumber);
-                return mail.emailPassword(rs.getString("LecturerNumber"), email, rs.getString("Password"));
+                return Email.emailPassword(rs.getString("LecturerNumber"), email, rs.getString("Password"));
             } else {
                 log("Server> Failed To Email Password For ClassLecturer: " + lecturerNumber);
                 return false;
@@ -981,7 +976,7 @@ public class DatabaseHandler {
         }
     }
 
-    void initAdminPassword(String adminUsername, String email) {
+    private void initAdminPassword(String adminUsername, String email) {
         try {
             String newPassword = calculateNewPassword();
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Admin SET Password = ?, AssignedPassword = 1 WHERE Username = ?");
@@ -995,7 +990,7 @@ public class DatabaseHandler {
         }
     }
 
-    void initStudentPassword(String studentNumber, String email) {
+    private void initStudentPassword(String studentNumber, String email) {
         try {
             String newPassword = calculateNewPassword();
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Student SET Password = ?, AssignedPassword = 1 WHERE StudentNumber = ?");
@@ -1009,7 +1004,7 @@ public class DatabaseHandler {
         }
     }
 
-    void initLecturerPassword(String lecturerNumber, String email) {
+    private void initLecturerPassword(String lecturerNumber, String email) {
         try {
             String newPassword = calculateNewPassword();
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Lecturer SET Password = ?, AssignedPassword = 1 WHERE LecturerID = ?");
@@ -1025,115 +1020,6 @@ public class DatabaseHandler {
     //</editor-fold>
 
     //<editor-fold desc="Adders">
-    private void addStudent(String studentNumber, String qualification, String firstName, String lastName, String email, String contactNumber) {
-        try {
-            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Student (StudentNumber, Qualification, FirstName, LastName, Password, Email, ContactNumber, AssignedPassword) VALUES (?,?,?,?,?,?,?,?);");
-            preparedStatement.setString(1, studentNumber);
-            preparedStatement.setString(2, qualification);
-            preparedStatement.setString(3, firstName);
-            preparedStatement.setString(4, lastName);
-            preparedStatement.setString(5, "password");
-            preparedStatement.setString(6, email);
-            preparedStatement.setString(7, contactNumber);
-            preparedStatement.setBoolean(8, true);
-            log("Admin> Successfully Added Student: " + studentNumber);
-            preparedStatement.execute();
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            log("Server> addStudent> " + ex);
-        }
-    }
-
-    private Boolean addLecturer(String lecturerNumber, String firstName, String lastName, String email, String contactNumber) {
-        try {
-            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Lecturer (LecturerID, FirstName, LastName, Password, Email, ContactNumber) VALUES (?,?,?,?,?,?);");
-            preparedStatement.setString(1, lecturerNumber);
-            preparedStatement.setString(2, firstName);
-            preparedStatement.setString(3, lastName);
-            preparedStatement.setString(4, "password");
-            preparedStatement.setString(5, email);
-            preparedStatement.setString(6, contactNumber);
-            log("Admin> Successfully Added ClassLecturer: " + lecturerNumber);
-            return preparedStatement.execute();
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            log("Server> addLecturer> " + ex);
-            return false;
-        }
-    }
-
-    public Boolean addAdmin(String username, String password) {
-        try {
-            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Admin (Username, Pasword) VALUES (?,?);");
-            preparedStatement.setString(1, username);
-            preparedStatement.setString(2, password);
-            log("Admin> Successfully Added Admin: " + username);
-            return preparedStatement.execute();
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            log("Server> addAdmin> " + ex);
-            return false;
-        }
-    }
-
-    private void addClass(String moduleName, String moduleNumber, String lecturerNumber) {
-        try {
-            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Class (ModuleName, ModuleNumber, LecturerID) VALUES (?,?,?);");
-            preparedStatement.setString(1, moduleName);
-            preparedStatement.setString(2, moduleNumber);
-            preparedStatement.setString(3, lecturerNumber);
-            log("Admin> Successfully Added Class: " + moduleNumber);
-            preparedStatement.execute();
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            log("Server> addClass> " + ex);
-        }
-    }
-
-    private void addClassTime(int classID, String roomNumber, int dayOfWeek, int startSlot, int endSlot) {
-        try {
-            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO ClassTime (ClassID, RoomNumber, DayOfWeek, StartSlot, EndSlot) VALUES (?,?,?,?,?);");
-            preparedStatement.setInt(1, classID);
-            preparedStatement.setString(2, roomNumber);
-            preparedStatement.setInt(3, dayOfWeek);
-            preparedStatement.setInt(4, startSlot);
-            preparedStatement.setInt(5, endSlot);
-            log("Admin> Successfully Added ClassTime For ClassID: " + classID);
-            preparedStatement.execute();
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            log("Server> addClassTime> " + ex);
-        }
-    }
-
-    private Boolean addResultTemplate(int classID, int resultMax, int dpWeight, int finalWeight, String resultName) {
-        try {
-            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO ResultTemplate (ClassID, ResultMax, DPWeight, FinalWeight, ResultName) VALUES (?,?,?,?,?);");
-            preparedStatement.setInt(1, classID);
-            preparedStatement.setInt(2, resultMax);
-            preparedStatement.setInt(3, dpWeight);
-            preparedStatement.setInt(4, finalWeight);
-            preparedStatement.setString(5, resultName);
-            preparedStatement.execute();
-            if (!resultName.matches("Supplementary Exam")) {//TODO String correct
-                preparedStatement = con.prepareStatement("SELECT ResultTemplateID FROM ResultTemplate WHERE ClassID = ? AND ResultMax = ? AND DPWeight = ? AND FinalWeight = ? AND ResultName = ?;");
-                preparedStatement.setInt(1, classID);
-                preparedStatement.setInt(2, resultMax);
-                preparedStatement.setInt(3, dpWeight);
-                preparedStatement.setInt(4, finalWeight);
-                preparedStatement.setString(5, resultName);
-                ResultSet rs = preparedStatement.executeQuery();
-                addResultForClass(classID, rs.getInt("ResultTemplateID"));
-                notifyUpdatedClass(classID);
-            }
-            return true;
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            log("Server> addResultTemplate> " + ex);
-            return false;
-        }
-    }
-
     private void addResultForClass(int classID, int resultTemplateID) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM Registered WHERE ClassID = ?;");
@@ -1189,7 +1075,7 @@ public class DatabaseHandler {
             preparedStatement.setInt(1, classID);
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
-                if (!rs.getString("ResultName").matches("Supplementary Exam")) {//TODO String correct
+                if (!rs.getString("ResultName").matches("Supplementary Exam")) {
                     PreparedStatement preparedStatement2 = con.prepareStatement("INSERT INTO Result (ResultTemplateID, StudentNumber, Result) VALUES (?,?,?);");
                     preparedStatement2.setInt(1, rs.getInt("ResultTemplateID"));
                     preparedStatement2.setString(2, studentNumber);
@@ -1203,7 +1089,6 @@ public class DatabaseHandler {
         }
     }
 
-    //TODO Lecturer addAttendance
     public Boolean addAttendance(int classID, String studentNumber, String aDate, String attendance) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Attendance (ClassID, StudentNumber, ADate, Attendance) VALUES (?,?,?,?);");
@@ -1222,39 +1107,7 @@ public class DatabaseHandler {
         }
     }
 
-    private void addContactDetails(String name, String position, String department, String contactNumber, String email) {
-        try {
-            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO ContactDetails (Name, Position, Department, ContactNumber, Email) VALUES (?,?,?,?,?);");
-            preparedStatement.setString(1, name);
-            preparedStatement.setString(2, position);
-            preparedStatement.setString(3, department);
-            preparedStatement.setString(4, contactNumber);
-            preparedStatement.setString(5, email);
-            log("Admin> Successfully Added Notice: ");
-            preparedStatement.execute();
-            notifyUpdatedAll();
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            log("Server> addNotice> " + ex);
-        }
-    }
-
-    private void addNotification(String heading, String description, String tag) {
-        try {
-            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Notification (Heading, Description, Tag) VALUES (?,?,?);");
-            preparedStatement.setString(1, heading);
-            preparedStatement.setString(2, description);
-            preparedStatement.setString(3, tag);
-            log("Admin> Successfully Added Notice: " + heading + " For: " + tag);
-            preparedStatement.execute();
-            notifyUpdatedNotices(tag);
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            log("Server> addNotice> " + ex);
-        }
-    }
-
-    Boolean addStudentToClass(String studentNumber, int classID) {
+    void addStudentToClass(String studentNumber, int classID) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Registered (StudentNumber, ClassID) VALUES (?,?);");
             preparedStatement.setString(1, studentNumber);
@@ -1262,18 +1115,15 @@ public class DatabaseHandler {
             preparedStatement.execute();
             addRegisterResults(studentNumber, classID);
             notifyUpdatedStudent(studentNumber);
-            return true;
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> registerStudentForClass> " + ex);
-            return false;
         }
     }
     //</editor-fold>
 
     //<editor-fold desc="Updaters">
-    //TODO if studentNumber change
-    Boolean updateStudent(Student student) {
+    void updateStudent(Student student) {
         try {
             if (isStudentRegistered(student.getStudentNumber())) {
                 PreparedStatement preparedStatement = con.prepareStatement("UPDATE Student SET Qualification = ?, FirstName = ?,  LastName = ?, Email = ?, ContactNumber = ? WHERE StudentNumber = ?;");
@@ -1282,24 +1132,25 @@ public class DatabaseHandler {
                 preparedStatement.setString(3, student.getLastName());
                 preparedStatement.setString(4, student.getEmail());
                 preparedStatement.setString(5, student.getContactNumber());
+                preparedStatement.setString(6, student.getStudentNumber());
                 preparedStatement.executeUpdate();
                 notifyUpdatedStudent(student.getStudentNumber());
+                log("Server> updateStudent> Updated student");
             } else {
                 PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Student (StudentNumber, Qualification, FirstName, LastName, Email, ContactNumber) VALUES (?, ?, ?, ?, ?, ?);");
                 preparedStatement.setString(1, student.getStudentNumber());
                 preparedStatement.setString(2, student.getQualification());
                 preparedStatement.setString(3, student.getFirstName());
                 preparedStatement.setString(4, student.getLastName());
-                preparedStatement.setString(5, student.getContactNumber());
+                preparedStatement.setString(5, student.getEmail());
+                preparedStatement.setString(6, student.getContactNumber());
                 preparedStatement.executeUpdate();
-                initStudentPassword(student.getStudentNumber(), student.getEmail());
                 notifyUpdatedStudent(student.getStudentNumber());
+                initStudentPassword(student.getStudentNumber(), student.getEmail());
             }
-            return true;
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> updateStudent> " + ex);
-            return false;
         }
     }
 
@@ -1312,7 +1163,7 @@ public class DatabaseHandler {
                 preparedStatement.setString(3, lecturer.getEmail());
                 preparedStatement.setString(4, lecturer.getContactNumber());
                 preparedStatement.setString(5, lecturer.getLecturerNumber());
-                preparedStatement.executeQuery().next();
+                preparedStatement.executeUpdate();
                 saveLecturerImage(lecturer.getLecturerNumber(), lecturer.getImageBytes());
                 notifyUpdatedLecturer(lecturer.getLecturerNumber());
             } else {
@@ -1324,8 +1175,8 @@ public class DatabaseHandler {
                 preparedStatement.setString(5, lecturer.getLecturerNumber());
                 preparedStatement.executeUpdate();
                 saveLecturerImage(lecturer.getLecturerNumber(), lecturer.getImageBytes());
-                initLecturerPassword(lecturer.getLecturerNumber(), lecturer.getEmail());
                 notifyUpdatedLecturer(lecturer.getLecturerNumber());
+                initLecturerPassword(lecturer.getLecturerNumber(), lecturer.getEmail());
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -1333,7 +1184,7 @@ public class DatabaseHandler {
         }
     }
 
-    Boolean updateClass(StudentClass studentClass) {
+    void updateClass(StudentClass studentClass) {
         try {
             if (isClassRegistered(studentClass.getClassID())) {
                 PreparedStatement preparedStatement = con.prepareStatement("UPDATE Class SET ModuleName = ?, ModuleNumber = ?, LecturerID = ? WHERE ClassID = ?;");
@@ -1343,20 +1194,35 @@ public class DatabaseHandler {
                 preparedStatement.setInt(4, studentClass.getClassID());
                 preparedStatement.executeUpdate();
                 notifyUpdatedClass(studentClass.getClassID());
-                return true;
             } else {
                 PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Class (ModuleName, ModuleNumber, LecturerID) VALUES (?, ?, ?)");
                 preparedStatement.setString(1, studentClass.getModuleName());
                 preparedStatement.setString(2, studentClass.getModuleNumber());
                 preparedStatement.setString(3, studentClass.getClassLecturer().getLecturerID());
                 preparedStatement.executeUpdate();
+                int classId = -1;
+                preparedStatement = con.prepareStatement("SELECT ClassID FROM Class WHERE ModuleName = ? AND ModuleNumber = ? AND LecturerID = ?");
+                preparedStatement.setString(1, studentClass.getModuleName());
+                preparedStatement.setString(2, studentClass.getModuleNumber());
+                preparedStatement.setString(3, studentClass.getClassLecturer().getLecturerID());
+                ResultSet rs = preparedStatement.executeQuery();
+                while (rs.next()) {
+                    classId = rs.getInt("ClassID");
+                }
+                for (ResultTemplate rt : studentClass.getResultTemplates()) {
+                    preparedStatement = con.prepareStatement("INSERT INTO ResultTemplate (ClassID, ResultMax, DPWeight, FinalWeight, ResultName) VALUES (?, ?, ?, ?, ?)");
+                    preparedStatement.setInt(1, classId);
+                    preparedStatement.setInt(2, rt.getResultMax());
+                    preparedStatement.setInt(3, rt.getDpWeight());
+                    preparedStatement.setInt(4, rt.getFinalWeight());
+                    preparedStatement.setString(5, rt.getResultName());
+                    preparedStatement.executeUpdate();
+                }
                 notifyUpdatedClass(studentClass.getClassID());
-                return true;
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> updateClass> " + ex);
-            return false;
         }
     }
 
@@ -1369,6 +1235,7 @@ public class DatabaseHandler {
             preparedStatement.setInt(4, classTime.getStartSlot());
             preparedStatement.setInt(5, classTime.getEndSlot());
             preparedStatement.executeUpdate();
+            notifyUpdatedClass(classTime.getClassID());
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> updateClassTime> " + ex);
@@ -1393,30 +1260,31 @@ public class DatabaseHandler {
         }
     }
 
-    void updateResultTemplate(ResultTemplate resultTemplate) {
-
+    void updateResultTemplate(List<ResultTemplate> resultTemplates) {
         try {
-            if (resultTemplate.getId() > -1) {
-                PreparedStatement preparedStatement = con.prepareStatement("UPDATE ResultTemplate SET ClassID = ?, ResultMax = ?, DPWeight = ?, FinalWeight = ?, ResultName = ? WHERE ResultTemplateID = ?;");
-                preparedStatement.setInt(1, resultTemplate.getClassID());
-                preparedStatement.setInt(2, resultTemplate.getResultMax());
-                preparedStatement.setInt(3, resultTemplate.getDpWeight());
-                preparedStatement.setInt(4, resultTemplate.getFinalWeight());
-                preparedStatement.setString(5, resultTemplate.getResultName());
-                preparedStatement.setInt(6, resultTemplate.getId());
-                log("Admin> Successfully Updated ResultTemplate: ");
-                preparedStatement.executeUpdate();
-                notifyUpdatedClass(resultTemplate.getClassID());
-            } else {
-                PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO ResultTemplate (ClassID, ResultMax, DPWeight, FinalWeight, ResultName) VALUES (?, ?, ?, ?, ?)");
-                preparedStatement.setInt(1, resultTemplate.getClassID());
-                preparedStatement.setInt(2, resultTemplate.getResultMax());
-                preparedStatement.setInt(3, resultTemplate.getDpWeight());
-                preparedStatement.setInt(4, resultTemplate.getFinalWeight());
-                preparedStatement.setString(5, resultTemplate.getResultName());
-                log("Admin> Successfully Updated ResultTemplate: ");
-                preparedStatement.executeUpdate();
-                notifyUpdatedClass(resultTemplate.getClassID());
+            for (ResultTemplate resultTemplate : resultTemplates) {
+                if (resultTemplate.getId() > -1) {
+                    PreparedStatement preparedStatement = con.prepareStatement("UPDATE ResultTemplate SET ClassID = ?, ResultMax = ?, DPWeight = ?, FinalWeight = ?, ResultName = ? WHERE ResultTemplateID = ?;");
+                    preparedStatement.setInt(1, resultTemplate.getClassID());
+                    preparedStatement.setInt(2, resultTemplate.getResultMax());
+                    preparedStatement.setInt(3, resultTemplate.getDpWeight());
+                    preparedStatement.setInt(4, resultTemplate.getFinalWeight());
+                    preparedStatement.setString(5, resultTemplate.getResultName());
+                    preparedStatement.setInt(6, resultTemplate.getId());
+                    log("Admin> Successfully Updated ResultTemplate: ");
+                    preparedStatement.executeUpdate();
+                    notifyUpdatedClass(resultTemplate.getClassID());
+                } else {
+                    PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO ResultTemplate (ClassID, ResultMax, DPWeight, FinalWeight, ResultName) VALUES (?, ?, ?, ?, ?)");
+                    preparedStatement.setInt(1, resultTemplate.getClassID());
+                    preparedStatement.setInt(2, resultTemplate.getResultMax());
+                    preparedStatement.setInt(3, resultTemplate.getDpWeight());
+                    preparedStatement.setInt(4, resultTemplate.getFinalWeight());
+                    preparedStatement.setString(5, resultTemplate.getResultName());
+                    log("Admin> Successfully Updated ResultTemplate: ");
+                    preparedStatement.executeUpdate();
+                    notifyUpdatedClass(resultTemplate.getClassID());
+                }
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -1425,7 +1293,7 @@ public class DatabaseHandler {
 
     }
 
-    Boolean updateResult(Result result) {
+    void updateResult(Result result) {
         try {
             PreparedStatement preparedStatement = con.prepareStatement("UPDATE Result SET Result = ? WHERE resultTemplateID = ? AND StudentNumber = ?;");
             preparedStatement.setInt(1, (int) result.getResult());
@@ -1434,11 +1302,9 @@ public class DatabaseHandler {
             log("Admin> Successfully Updated Result: ");
             preparedStatement.executeUpdate();
             notifyUpdatedStudent(result.getStudentNumber());
-            return true;
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> updateResult> " + ex);
-            return false;
         }
     }
 
@@ -1492,7 +1358,7 @@ public class DatabaseHandler {
         }
     }
 
-    Boolean updateNotification(Notification notification) {
+    void updateNotification(Notification notification) {
         try {
             if (notification.getId() != -1) {
                 PreparedStatement preparedStatement = con.prepareStatement("UPDATE Notification SET Heading = ?, Description = ?, Tag = ? WHERE NotificationID = ?;");
@@ -1502,7 +1368,6 @@ public class DatabaseHandler {
                 preparedStatement.setInt(4, notification.getId());
                 preparedStatement.executeUpdate();
                 notifyUpdatedNotification(notification.getTag());
-                return true;
             } else {
                 PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO Notification (Heading, Description, Tag) VALUES (?, ?, ?)");
                 preparedStatement.setString(1, notification.getHeading());
@@ -1511,11 +1376,9 @@ public class DatabaseHandler {
                 preparedStatement.executeUpdate();
                 notifyUpdatedNotification(notification.getTag());
             }
-            return true;
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> updateNotice> " + ex);
-            return false;
         }
     }
 
@@ -1530,6 +1393,7 @@ public class DatabaseHandler {
                 preparedStatement.setString(5, contactDetails.getEmail());
                 preparedStatement.setInt(6, contactDetails.getId());
                 preparedStatement.executeUpdate();
+                saveContactImage(contactDetails.getId() + "", contactDetails.getImageBytes());
                 notifyUpdatedContact();
             } else {
                 PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO ContactDetails (Name, Position, Department, ContactNumber, Email) VALUES (?, ?, ?, ?, ?)");
@@ -1539,6 +1403,7 @@ public class DatabaseHandler {
                 preparedStatement.setString(4, contactDetails.getContactNumber());
                 preparedStatement.setString(5, contactDetails.getEmail());
                 preparedStatement.executeUpdate();
+                saveContactImage(contactDetails.getId() + "", contactDetails.getImageBytes());
                 notifyUpdatedContact();
             }
         } catch (SQLException ex) {
@@ -1560,8 +1425,8 @@ public class DatabaseHandler {
                 preparedStatement.setString(1, admin.getAdminName());
                 preparedStatement.setString(2, admin.getAdminEmail());
                 preparedStatement.executeUpdate();
-                initAdminPassword(admin.getAdminName(), admin.getAdminEmail());
                 notifyAdminUpdate();
+                initAdminPassword(admin.getAdminName(), admin.getAdminEmail());
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -1773,10 +1638,10 @@ public class DatabaseHandler {
 
     private void notifyUpdatedNotification(String tag) {
         for (ConnectionHandler ch : Server.connectionsList) {
-            if (ch instanceof LecturerConnectionHandler) {
-            } else if (ch instanceof StudentConnectionHandler) {
+            if (ch instanceof StudentConnectionHandler) {
                 if (((StudentConnectionHandler) ch).getStudent().getStudentNumber().equals(tag)) {
                     ((StudentConnectionHandler) ch).updateNotifications.setValue(true);
+                    System.out.println("Should update student");
                 }
             } else if (ch instanceof AdminConnectionHandler) {
                 ((AdminConnectionHandler) ch).updateNotifications.setValue(true);
@@ -1829,26 +1694,39 @@ public class DatabaseHandler {
 
     //<editor-fold desc="Remove">
     void removeStudent(String studentNumber) {
-        Student student = getStudent(studentNumber);
         try {
             PreparedStatement preparedStatement = con.prepareStatement("DELETE FROM Student WHERE StudentNumber = ?;");
-            preparedStatement.setString(1, student.getStudentNumber());
+            preparedStatement.setString(1, studentNumber);
             preparedStatement.executeUpdate();
             preparedStatement = con.prepareStatement("DELETE FROM Notification WHERE Tag = ?;");
-            preparedStatement.setString(1, student.getStudentNumber());
+            preparedStatement.setString(1, studentNumber);
             preparedStatement.executeUpdate();
             preparedStatement = con.prepareStatement("DELETE FROM Notice WHERE Tag = ?;");
-            preparedStatement.setString(1, student.getStudentNumber());
+            preparedStatement.setString(1, studentNumber);
             preparedStatement.executeUpdate();
-            for (int i = 0; i < student.getClassResultAttendances().size(); i++) {
-                removeStudentFromClass(student.getStudentNumber(), student.getClassResultAttendances().get(i).getStudentClass().getClassID());
-                preparedStatement = con.prepareStatement("DELETE FROM Result WHERE StudentNumber = ?;");
-                preparedStatement.setString(1, student.getStudentNumber());
-                preparedStatement.executeQuery().next();
-                preparedStatement = con.prepareStatement("DELETE FROM Attendance WHERE StudentNumber = ?;");
-                preparedStatement.setString(1, student.getStudentNumber());
-            }
+            preparedStatement = con.prepareStatement("DELETE FROM Registered WHERE StudentNumber = ?;");
+            preparedStatement.setString(1, studentNumber);
+            preparedStatement.executeUpdate();
+            preparedStatement = con.prepareStatement("DELETE FROM Result WHERE StudentNumber = ?;");
+            preparedStatement.setString(1, studentNumber);
+            preparedStatement.executeUpdate();
+            preparedStatement = con.prepareStatement("DELETE FROM Attendance WHERE StudentNumber = ?;");
+            preparedStatement.setString(1, studentNumber);
+            preparedStatement.executeUpdate();
             notifyUpdatedStudent(studentNumber);
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            log("Server> removeStudentFromClass> " + ex);
+        }
+    }
+
+    void removeAdmin(String username) {
+        try {
+            PreparedStatement preparedStatement = con.prepareStatement("DELETE FROM Admin WHERE Username = ?;");
+            preparedStatement.setString(1, username);
+            log("Admin> Successfully Removed Admin");
+            preparedStatement.executeUpdate();
+            notifyAdminUpdate();
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> removeStudentFromClass> " + ex);
@@ -1860,9 +1738,21 @@ public class DatabaseHandler {
             PreparedStatement preparedStatement = con.prepareStatement("DELETE FROM Registered WHERE StudentNumber = ? AND ClassID = ?;");
             preparedStatement.setString(1, studentNumber);
             preparedStatement.setInt(2, classID);
-            log("Admin> Successfully Removed Student: " + studentNumber + " From Class: " + classID);
+            preparedStatement = con.prepareStatement("SELECT ResultTemplateID FROM ResultTemplate WHERE ClassID = ?");
+            preparedStatement.setInt(1, classID);
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()) {
+                PreparedStatement preparedStatement2 = con.prepareStatement("DELETE FROM Result WHERE StudentNumber = ? AND ResultTemplateID = ?;");
+                preparedStatement2.setString(1, studentNumber);
+                preparedStatement2.setInt(2, rs.getInt("ResultTemplateID"));
+                preparedStatement2.executeUpdate();
+            }
+            preparedStatement = con.prepareStatement("DELETE FROM Attendance WHERE StudentNumber = ? AND ClassID = ?");
+            preparedStatement.setString(1, studentNumber);
+            preparedStatement.setInt(2, classID);
             preparedStatement.executeUpdate();
             notifyUpdatedStudent(studentNumber);
+            log("Admin> Successfully Removed Student: " + studentNumber + " From Class: " + classID);
             //TODO remove others (results, result templates, attendance)
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -1945,9 +1835,15 @@ public class DatabaseHandler {
 
     void removeAttendance(int attendanceID) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("DELETE FROM Attendance WHERE AttendanceID = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT StudentNumber FROM Attendance WHERE AttendanceID = ?;");
+            preparedStatement.setInt(1, attendanceID);
+            ResultSet rs = preparedStatement.executeQuery();
+            rs.next();
+            String studentNumber = rs.getString("StudentNumber");
+            preparedStatement = con.prepareStatement("DELETE FROM Attendance WHERE AttendanceID = ?;");
             preparedStatement.setInt(1, attendanceID);
             preparedStatement.executeUpdate();
+            notifyUpdatedStudent(studentNumber);
         } catch (Exception ex) {
             ex.printStackTrace();
             log("Server> removeAttendance> " + ex);
@@ -2022,7 +1918,7 @@ public class DatabaseHandler {
 
     void removeImportantDate(int importantDateID) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("DELETE FROM ImporantDate WHERE ImporantDateID = ?;");
+            PreparedStatement preparedStatement = con.prepareStatement("DELETE FROM ImportantDate WHERE ImportantDateID = ?;");
             preparedStatement.setInt(1, importantDateID);
             preparedStatement.executeUpdate();
             notifyUpdatedDate();
@@ -2086,7 +1982,9 @@ public class DatabaseHandler {
     private void saveLecturerImage(String lecturerNumber, byte[] imageBytes) {
         try {
             if (imageBytes != null) {
-                Files.write(new File(Server.LECTURER_IMAGES + "/" + lecturerNumber + "/profile.jpg").toPath(), imageBytes);
+                File newFile = new File(Server.LECTURER_IMAGES + "/" + lecturerNumber + "/profile.jpg");
+                newFile.getParentFile().mkdirs();
+                Files.write(newFile.toPath(), imageBytes);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -2097,7 +1995,9 @@ public class DatabaseHandler {
     private void saveContactImage(String contactID, byte[] imageBytes) {
         try {
             if (imageBytes != null) {
-                Files.write(new File(Server.CONTACT_IMAGES + "/" + contactID + "/profile.jpg").toPath(), imageBytes);
+                File newFile = new File(Server.CONTACT_IMAGES + "/" + contactID + "/profile.jpg");
+                newFile.getParentFile().mkdirs();
+                Files.write(newFile.toPath(), imageBytes);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -2106,16 +2006,16 @@ public class DatabaseHandler {
     }
 
     private String calculateNewPassword() {
-        String newPassword = "";
+        StringBuilder newPassword = new StringBuilder();
         for (int i = 0; i < 8; i++) {
             int random = (int) ((Math.random() * 26) + 65);
             if (Math.round(Math.random()) == 1) {
                 random += 32;
             }
-            newPassword += ((char) random) + "";
+            newPassword.append((char) random).append("");
         }
         System.out.println("Random password:" + newPassword);
-        return newPassword;
+        return newPassword.toString();
     }
 
     void log(String logDetails) {

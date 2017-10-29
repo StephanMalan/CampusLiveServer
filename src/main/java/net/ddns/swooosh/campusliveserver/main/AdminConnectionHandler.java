@@ -16,6 +16,7 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.List;
 
 public class AdminConnectionHandler extends ConnectionHandler implements Runnable {
 
@@ -141,6 +142,8 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                             if (contactDetails != null) {
                                 outputQueue.add(contactDetails);
                             }
+                        } else if (text.startsWith("rm:")) { //remove admin
+                            dh.removeAdmin(text.substring(3));
                         } else if (text.startsWith("rs:")) { //remove student
                             dh.removeStudent(text.substring(3));
                         } else if (text.startsWith("rl:")) { //remove lecturer
@@ -160,7 +163,7 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                         } else if (text.startsWith("ri:")) { //remove important dates
                             dh.removeImportantDate(Integer.parseInt(text.substring(3)));
                         } else if (text.startsWith("rct:")) { //remove class time
-                            dh.removeClassTime(Integer.parseInt(text.substring(3)));
+                            dh.removeClassTime(Integer.parseInt(text.substring(4)));
                         } else if (text.startsWith("uc:")) { //unregister class
                             dh.removeStudentFromClass(text.split(":")[1], Integer.parseInt(text.split(":")[2]));
                             outputQueue.add(dh.getStudent(student.getStudentNumber()));
@@ -177,9 +180,9 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                             dh.resetLecturerPassword(text.split(":")[1], text.split(":")[2]);
                         } else if (text.startsWith("idp:")) { //is default password
                             isDefaultPassword();
-                        } else if (text.startsWith("cdp:")) {//reset admin password
+                        } else if (text.startsWith("cdp:")) { //reset admin password
                             changeDefaultPassword(text.substring(4));
-                        } else if (text.startsWith("rse:")) {//register supplementary examination
+                        } else if (text.startsWith("rse:")) { //register supplementary examination
                             dh.regSuppExam(text.split(":")[1], Integer.parseInt(text.split(":")[2]));
                         } else {
                             dh.log("Admin " + username + "> Requested Unknown Command: " + input);
@@ -204,10 +207,13 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                         dh.updateDate((ImportantDate) input);
                     } else if (input instanceof Result) {
                         dh.updateResult((Result) input);
-                    } else if (input instanceof ResultTemplate) {
-                        dh.updateResultTemplate((ResultTemplate) input);
                     } else if (input instanceof ContactDetails) {
                         dh.updateContactDetails((ContactDetails) input);
+                    } else if (input instanceof List<?>) {
+                        List list = (List) input;
+                        if (!list.isEmpty() && list.get(0) instanceof ResultTemplate) {
+                            dh.updateResultTemplate(list);
+                        }
                     }
                 }
             }

@@ -33,7 +33,6 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     public volatile BooleanProperty updateNotifications = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateContactDetails = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateImportantDates = new SimpleBooleanProperty(false);
-    public volatile BooleanProperty running = new SimpleBooleanProperty(true);
 
     public StudentConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String studentNumber, ObservableList<ConnectionHandler> connectionsList, DatabaseHandler dh) {
         super(socket, objectInputStream, objectOutputStream, connectionsList, dh);
