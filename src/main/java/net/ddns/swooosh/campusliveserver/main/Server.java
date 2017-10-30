@@ -14,7 +14,7 @@ import java.net.SocketException;
 
 public class Server {
 
-    static final File APPLICATION_FOLDER = new File(System.getProperty("user.home") + "/AppData/Local/Swooosh/CampusLive");
+    static final File APPLICATION_FOLDER = new File(System.getProperty("user.home") + "/AppData/Local/Swooosh/CampusLiveServer");
     static final File FILES_FOLDER = new File(APPLICATION_FOLDER.getAbsolutePath() + "/Files");
     static final File LECTURER_IMAGES = new File(APPLICATION_FOLDER.getAbsolutePath() + "/Lecturer");
     static final File CONTACT_IMAGES = new File(APPLICATION_FOLDER.getAbsolutePath() + "/Contact");
