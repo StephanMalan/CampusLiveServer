@@ -161,7 +161,11 @@ public class Server {
                             } else if (input.startsWith("fsp:")) {
                                 dh.log("Student > Requested Forgot Password");
                                 dh.emailStudentPassword(input.substring(4));
+                            } else if (input.startsWith("flp:")) {
+                                dh.log("Lecturer > Requested Forgot Password");
+                                dh.emailLecturerPassword(input.substring(4));
                             }
+                            //TODO lecturer
                         }
                     } catch (SocketException e) {
                         dh.log("Server> User Disconnected");

@@ -2,7 +2,7 @@ package models.all;
 
 import java.io.Serializable;
 
-public class Notice implements Serializable{
+public class Notice implements Serializable {
 
     private int id;
     private String heading;
@@ -34,7 +34,7 @@ public class Notice implements Serializable{
         return tag;
     }
 
-    public String getExpiryDate(){
+    public String getExpiryDate() {
         return expiryDate;
     }
 }

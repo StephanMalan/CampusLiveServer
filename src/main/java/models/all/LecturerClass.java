@@ -1,8 +1,5 @@
 package models.all;
 
-import models.all.ClassFile;
-import models.all.ClassTime;
-
 import java.io.Serializable;
 import java.util.List;
 
@@ -40,5 +37,10 @@ public class LecturerClass implements Serializable{
 
     public List<ClassFile> getFiles() {
         return files;
+    }
+
+    @Override
+    public String toString() {
+        return moduleName;
     }
 }

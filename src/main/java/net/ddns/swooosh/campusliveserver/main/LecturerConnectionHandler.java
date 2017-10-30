@@ -6,8 +6,10 @@ import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import models.all.*;
+import models.lecturer.AttendanceRecord;
 import models.lecturer.LecturerStudentAttendance;
 import models.lecturer.LecturerStudentResult;
+import models.lecturer.UploadFile;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +17,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -36,7 +41,6 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     public volatile BooleanProperty updateImportantDates = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateStudentAttendance = new SimpleBooleanProperty(false);
     public volatile BooleanProperty updateStudentResults = new SimpleBooleanProperty(false);
-    public volatile BooleanProperty running = new SimpleBooleanProperty(true);
     //private FileDownloader fileDownloader = new FileDownloader()//TODO where to start
 
     public LecturerConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String lecturerNumber, ObservableList<ConnectionHandler> connectionsList, DatabaseHandler dh) {
@@ -85,15 +89,26 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
             outputQueue.add(0, lecturer.get());
         });
         notices.addListener((InvalidationListener) e -> {
-            if (!notices.isEmpty()) {
-                outputQueue.add(0, Arrays.asList(notices.toArray()));
-            }
+            outputQueue.add(0, Arrays.asList(notices.toArray()));
+        });
+        contactDetails.addListener((InvalidationListener) e -> {
+            outputQueue.add(0, Arrays.asList(contactDetails.toArray()));
+        });
+        importantDates.addListener((InvalidationListener) e -> {
+            outputQueue.add(0, Arrays.asList(importantDates.toArray()));
+        });
+        studentAttendance.addListener((InvalidationListener) e -> {
+            outputQueue.add(0, Arrays.asList(studentAttendance.toArray()));
+        });
+        studentResults.addListener((InvalidationListener) e -> {
+            outputQueue.add(0, Arrays.asList(studentResults.toArray()));
         });
         updateLecturer();
         updateNotices();
-        updateNotifications();
         updateContactDetails();
         updateImportantDates();
+        updateStudentAttendance();
+        updateStudentResults();
         new InputProcessor().start();
         new OutputProcessor().start();
     }
@@ -107,18 +122,34 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
                         String text = input.toString();
                         if (text.startsWith("cp:")) {
                             changePassword(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
-                        } else if (text.startsWith("fp:")) {
-                            forgotPassword(text.substring(3));
                         } else if (text.startsWith("gf:")) {
                             getFile(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
-                        } else if (text.startsWith("lgt:")) {
-                            terminateConnection();
+                        } else if (text.startsWith("ha:")) {
+                            if (dh.hasAttendance(Integer.parseInt(text.substring(3)))) {
+                                sendData("ha:y");
+                            } else {
+                                sendData("ha:n");
+                            }
+                        } else if (text.startsWith("idp:")) {
+                            isDefaultPassword();
+                        } else if (text.startsWith("cdp:")) {
+                            dh.log("Lecturer " + lecturerNumber + "> Requested Change Default Password");
+                            changeDefaultPassword(text.substring(4));
                         } else {
                             System.out.println("Unknown command: " + input);
                         }
-                    } else if (input instanceof FilePart) {
-                        FilePart fp = (FilePart) input;
-                        downloadQueue.add(fp);
+                    } else if (input instanceof UploadFile) {
+                        try {
+                            UploadFile uploadFile = (UploadFile) input;
+                            File newFile = new File(Server.FILES_FOLDER.getAbsolutePath() + "/" + uploadFile.getClassID() + "/" + uploadFile.getFileName());
+                            newFile.getParentFile().mkdirs();
+                            Files.write(newFile.toPath(), uploadFile.getFileData());
+                            dh.notifyUpdatedClass(uploadFile.getClassID());
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    } else if (input instanceof AttendanceRecord) {
+                        dh.addAttendance((AttendanceRecord) input);
                     }
                 }
             }
@@ -212,29 +243,23 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
         }
     }
 
-    public Object getReply() {
-        try {
-            Object input;
-            synchronized (objectInputStream) {
-                while ((input = objectInputStream.readUTF()) == null) ;
-            }
-            return input;
-        } catch (Exception ex) {
-            terminateConnection();
-            System.out.println("Server> getReply> " + ex);
-        }
-        return null;
-    }
-
     public void addMessage(String message, String studentName) {
         outputQueue.add(0, "sm:" + message + ":" + studentName);
     }
 
-    private void forgotPassword(String email) {
-        if (dh.emailLecturerPassword(email, lecturerNumber)) {
-            outputQueue.add(0, "fp:y");
+    private void isDefaultPassword() {
+        if (dh.isDefaultLecturerPassword(lecturerNumber)) {
+            outputQueue.add(0, "idp:y");
         } else {
-            outputQueue.add(0, "fp:n");
+            outputQueue.add(0, "idp:n");
+        }
+    }
+
+    private void changeDefaultPassword(String newPassword) {
+        if (dh.changeLecturerDefaultPassword(lecturerNumber, newPassword)) {
+            outputQueue.add(0, "cdp:y");
+        } else {
+            outputQueue.add(0, "cdp:n");
         }
     }
 
@@ -300,23 +325,25 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
     }
 
     private void updateNotices() {
-        notices.addAll(dh.getNotices(lecturerNumber, "ClassLecturer"));
-    }
-
-    private void updateNotifications() {
-        notifications.addAll(dh.getNotifications(lecturerNumber));
+        notices.clear();
+        notices.addAll(dh.getNotices(lecturerNumber, "Lecturer"));
     }
 
     private void updateContactDetails() {
-        contactDetails.addAll(dh.getContactDetails());
-        contactDetails.addAll(dh.getStudentContactDetails(lecturerNumber));
+        contactDetails.clear();
+        List<ContactDetails> out = new ArrayList<>();
+        out.addAll(dh.getContactDetails());
+        out.addAll(dh.getStudentContactDetails(lecturerNumber));
+        contactDetails.addAll(out);
     }
 
     private void updateImportantDates() {
+        importantDates.clear();
         importantDates.addAll(dh.getImportantDates());
     }
 
     private void updateStudentAttendance() {
+        studentAttendance.clear();
         studentAttendance.addAll(dh.getAllStudentsInClassAttendance(lecturerNumber));
     }
 

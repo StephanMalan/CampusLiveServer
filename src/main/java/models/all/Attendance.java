@@ -1,6 +1,6 @@
 package models.all;
 
-import java.io.Serializable;
+        import java.io.Serializable;
 
 public class Attendance implements Serializable {
 
