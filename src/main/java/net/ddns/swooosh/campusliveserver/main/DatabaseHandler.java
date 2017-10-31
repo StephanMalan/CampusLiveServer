@@ -399,7 +399,13 @@ public class DatabaseHandler {
             List<Notice> notices = new ArrayList<>();
             while (rs.next()) {
                 Notice newNotice = new Notice(rs.getInt("NoticeID"), rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag"), rs.getString("ExpiryDate"));
-                notices.add(newNotice);
+                try {
+                    if (new SimpleDateFormat("yyyy-MM-dd").parse(newNotice.getExpiryDate()).compareTo(Calendar.getInstance().getTime()) >= 0) {
+                        notices.add(newNotice);
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
             }
             log("Server> Successfully Gotten Notices For Student/ClassLecturer: " + studentNumber);
             if (notices.isEmpty()) {
@@ -597,6 +603,9 @@ public class DatabaseHandler {
             while (rs.next()) {
                 admins.add(new Admin(rs.getString("Username"), rs.getString("Email")));
             }
+            if (admins.isEmpty()) {
+                admins.add(new Admin("NoAdmin", ""));
+            }
             return admins;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -681,6 +690,9 @@ public class DatabaseHandler {
             while (rs.next()) {
                 notices.add(new Notice(rs.getInt("NoticeID"), rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag"), rs.getString("ExpiryDate")));
             }
+            if (notices.isEmpty()) {
+                notices.add(new Notice(0, "NoNotice", "", "", ""));
+            }
             return notices;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -713,6 +725,9 @@ public class DatabaseHandler {
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
                 notifications.add(new Notification(rs.getInt("NotificationID"), rs.getString("Heading"), rs.getString("Description"), rs.getString("Tag")));
+            }
+            if (notifications.isEmpty()) {
+                notifications.add(new Notification(0, "NoNotification", "", ""));
             }
             return notifications;
         } catch (SQLException ex) {
@@ -1617,7 +1632,7 @@ public class DatabaseHandler {
         }
     }
 
-    public void notifyUpdatedClass(int classID) {
+    void notifyUpdatedClass(int classID) {
         for (ConnectionHandler ch : Server.connectionsList) {
             if (ch instanceof LecturerConnectionHandler) {
                 for (LecturerClass lc : ((LecturerConnectionHandler) ch).getLecturer().getClasses()) {
@@ -1667,6 +1682,25 @@ public class DatabaseHandler {
                 }
             } else if (ch instanceof AdminConnectionHandler) {
                 ((AdminConnectionHandler) ch).updateNotifications.setValue(true);
+            }
+        }
+    }
+
+    void notifyUpdatedFiles(int classID) {
+        for (ConnectionHandler ch : Server.connectionsList) {
+            if (ch instanceof LecturerConnectionHandler) {
+                for (LecturerClass lc : ((LecturerConnectionHandler) ch).getLecturer().getClasses()) {
+                    if (lc.getId() == classID) {
+                        ((LecturerConnectionHandler) ch).updateLecturer.setValue(true);
+                    }
+                }
+            } else if (ch instanceof StudentConnectionHandler) {
+                for (ClassResultAttendance cra : ((StudentConnectionHandler) ch).getStudent().getClassResultAttendances()) {
+                    if (cra.getStudentClass().getClassID() == classID) {
+                        ((StudentConnectionHandler) ch).updateStudent.setValue(true);
+                        break;
+                    }
+                }
             }
         }
     }
@@ -2049,6 +2083,14 @@ public class DatabaseHandler {
             ex.printStackTrace();
             log("Server> saveContactImage> " + ex);
         }
+    }
+
+    void deleteFile(int classID, String fileName) {
+        File fileToDelete = new File(Server.FILES_FOLDER.getAbsolutePath() + "/" + classID + "/" + fileName);
+        if (fileToDelete.exists()) {
+            fileToDelete.delete();
+        }
+        notifyUpdatedClass(classID);
     }
 
     private String calculateNewPassword() {

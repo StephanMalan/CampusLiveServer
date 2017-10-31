@@ -135,6 +135,9 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
                         } else if (text.startsWith("cdp:")) {
                             dh.log("Lecturer " + lecturerNumber + "> Requested Change Default Password");
                             changeDefaultPassword(text.substring(4));
+                        } else if (text.startsWith("df:")) {
+                            dh.log("Lecturer " + lecturerNumber + "> Delete file");
+                            dh.deleteFile(Integer.parseInt(text.split(":")[1]), text.split(":")[2]);
                         } else {
                             System.out.println("Unknown command: " + input);
                         }
@@ -144,7 +147,7 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
                             File newFile = new File(Server.FILES_FOLDER.getAbsolutePath() + "/" + uploadFile.getClassID() + "/" + uploadFile.getFileName());
                             newFile.getParentFile().mkdirs();
                             Files.write(newFile.toPath(), uploadFile.getFileData());
-                            dh.notifyUpdatedClass(uploadFile.getClassID());
+                            dh.notifyUpdatedFiles(uploadFile.getClassID());
                         } catch (Exception ex) {
                             ex.printStackTrace();
                         }
