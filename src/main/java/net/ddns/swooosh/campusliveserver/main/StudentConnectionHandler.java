@@ -40,10 +40,10 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     private ObservableList<ImportantDate> importantDates = FXCollections.observableArrayList();
     private volatile ObservableList<Object> outputQueue = FXCollections.observableArrayList();
     volatile BooleanProperty updateStudent = new SimpleBooleanProperty(false);
-    private volatile BooleanProperty updateNotices = new SimpleBooleanProperty(false);
-    private volatile BooleanProperty updateNotifications = new SimpleBooleanProperty(false);
-    private volatile BooleanProperty updateContactDetails = new SimpleBooleanProperty(false);
-    private volatile BooleanProperty updateImportantDates = new SimpleBooleanProperty(false);
+    volatile BooleanProperty updateNotices = new SimpleBooleanProperty(false);
+    volatile BooleanProperty updateNotifications = new SimpleBooleanProperty(false);
+    volatile BooleanProperty updateContactDetails = new SimpleBooleanProperty(false);
+    volatile BooleanProperty updateImportantDates = new SimpleBooleanProperty(false);
 
     public StudentConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String studentNumber, ObservableList<ConnectionHandler> connectionsList, DatabaseHandler dh) {
         super(socket, objectInputStream, objectOutputStream, connectionsList, dh);
