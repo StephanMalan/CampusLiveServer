@@ -432,6 +432,7 @@ public class DatabaseHandler {
             if (notifications.isEmpty()) {
                 notifications.add(new Notification(0, "NoNotification", "", ""));
             }
+            System.out.println("Noticeboard: " + notifications);
             return notifications;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -1256,14 +1257,22 @@ public class DatabaseHandler {
 
     void updateClassTime(ClassTime classTime) {
         try {
-            PreparedStatement preparedStatement = con.prepareStatement("INSERT INTO ClassTime (ClassID, RoomNumber, DayOfWeek, StartSlot, EndSlot) VALUES (?, ?, ?, ?, ?)");
+            PreparedStatement preparedStatement = con.prepareStatement("SELECT * FROM ClassTime WHERE ClassID = ? AND RoomNumber = ? AND DayOfWeek = ? AND StartSlot = ? AND EndSlot = ?");
             preparedStatement.setInt(1, classTime.getClassID());
             preparedStatement.setString(2, classTime.getRoomNumber());
             preparedStatement.setInt(3, classTime.getDayOfWeek());
             preparedStatement.setInt(4, classTime.getStartSlot());
             preparedStatement.setInt(5, classTime.getEndSlot());
-            preparedStatement.executeUpdate();
-            notifyUpdatedClass(classTime.getClassID());
+            if (!preparedStatement.executeQuery().next()) {
+                preparedStatement = con.prepareStatement("INSERT INTO ClassTime (ClassID, RoomNumber, DayOfWeek, StartSlot, EndSlot) VALUES (?, ?, ?, ?, ?)");
+                preparedStatement.setInt(1, classTime.getClassID());
+                preparedStatement.setString(2, classTime.getRoomNumber());
+                preparedStatement.setInt(3, classTime.getDayOfWeek());
+                preparedStatement.setInt(4, classTime.getStartSlot());
+                preparedStatement.setInt(5, classTime.getEndSlot());
+                preparedStatement.executeUpdate();
+                notifyUpdatedClass(classTime.getClassID());
+            }
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> updateClassTime> " + ex);
@@ -1402,6 +1411,7 @@ public class DatabaseHandler {
                 preparedStatement.setString(2, notification.getDescription());
                 preparedStatement.setString(3, notification.getTag());
                 preparedStatement.executeUpdate();
+                preparedStatement.close();
                 notifyUpdatedNotification(notification.getTag());
             }
         } catch (SQLException ex) {
@@ -1472,7 +1482,7 @@ public class DatabaseHandler {
             preparedStatement.setInt(1, attendance.getAttendanceID());
             ResultSet rs = preparedStatement.executeQuery();
             rs.next();
-            notifyUpdatedStudent(rs.getString("StudentNumber"));
+            notifyUpdatedAttendance(rs.getString("StudentNumber"));
         } catch (SQLException ex) {
             ex.printStackTrace();
             log("Server> updateNotice> " + ex);
@@ -1612,6 +1622,32 @@ public class DatabaseHandler {
         }
     }
 
+    private void notifyUpdatedAttendance(String studentNumber) {
+        for (ConnectionHandler ch : Server.connectionsList) {
+            if (ch instanceof StudentConnectionHandler) {
+                if (((StudentConnectionHandler) ch).getStudentNumber().equals(studentNumber)) {
+                    ((StudentConnectionHandler) ch).updateStudent.setValue(true);
+                    return;
+                }
+            } else if (ch instanceof AdminConnectionHandler) {
+                ((AdminConnectionHandler) ch).updateStudents.set(true);
+            } else if (ch instanceof LecturerConnectionHandler) {
+                Student student = getStudent(studentNumber);
+                updateLecturer:
+                for (LecturerClass lc : ((LecturerConnectionHandler) ch).getLecturer().getClasses()) { //TODO this must be updated
+                    for (ClassResultAttendance cra : student.getClassResultAttendances()) {
+                        if (cra.getStudentClass().getClassID() == lc.getId()) {
+                            ((LecturerConnectionHandler) ch).updateLecturer.setValue(true);
+                            ((LecturerConnectionHandler) ch).updateStudentAttendance.setValue(true);
+                            ((LecturerConnectionHandler) ch).updateStudentResults.setValue(true);
+                            break updateLecturer;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private void notifyUpdatedLecturer(String lecturerNumber) {
         for (ConnectionHandler ch : Server.connectionsList) {
             if (ch instanceof LecturerConnectionHandler) {
@@ -1677,8 +1713,8 @@ public class DatabaseHandler {
         for (ConnectionHandler ch : Server.connectionsList) {
             if (ch instanceof StudentConnectionHandler) {
                 if (((StudentConnectionHandler) ch).getStudent().getStudentNumber().equals(tag)) {
-                    ((StudentConnectionHandler) ch).updateNotifications.setValue(true);
                     System.out.println("Should update student");
+                    ((StudentConnectionHandler) ch).updateNotifications.setValue(true);
                 }
             } else if (ch instanceof AdminConnectionHandler) {
                 ((AdminConnectionHandler) ch).updateNotifications.setValue(true);
@@ -2089,8 +2125,13 @@ public class DatabaseHandler {
         File fileToDelete = new File(Server.FILES_FOLDER.getAbsolutePath() + "/" + classID + "/" + fileName);
         if (fileToDelete.exists()) {
             fileToDelete.delete();
+            try {
+                Thread.sleep(50);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+            notifyUpdatedFiles(classID);
         }
-        notifyUpdatedClass(classID);
     }
 
     private String calculateNewPassword() {

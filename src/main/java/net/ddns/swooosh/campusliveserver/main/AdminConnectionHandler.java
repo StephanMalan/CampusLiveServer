@@ -245,7 +245,6 @@ public class AdminConnectionHandler extends ConnectionHandler implements Runnabl
                 objectOutputStream.writeObject(data);
                 objectOutputStream.flush();
                 objectOutputStream.reset();
-                dh.log("Server> Sent data: " + data);
             }
         } catch (Exception ex) {
             terminateConnection();

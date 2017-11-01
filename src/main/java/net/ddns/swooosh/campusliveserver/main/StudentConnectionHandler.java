@@ -1,15 +1,22 @@
 package net.ddns.swooosh.campusliveserver.main;
 
+import com.dropbox.core.DbxRequestConfig;
+import com.dropbox.core.v2.DbxClientV2;
+import com.dropbox.core.v2.files.FileMetadata;
+import com.dropbox.core.v2.files.ListFolderBuilder;
+import com.dropbox.core.v2.files.ListFolderResult;
+import com.dropbox.core.v2.files.Metadata;
+import com.dropbox.core.v2.sharing.RequestedVisibility;
+import com.dropbox.core.v2.sharing.SharedLinkMetadata;
+import com.dropbox.core.v2.sharing.SharedLinkSettings;
 import javafx.beans.InvalidationListener;
-import javafx.beans.property.*;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import models.all.ContactDetails;
-import models.all.FilePart;
-import models.all.ImportantDate;
-import models.all.Notice;
-import models.all.Notification;
-import models.all.Student;
+import models.all.*;
 
 import java.io.File;
 import java.io.ObjectInputStream;
@@ -17,6 +24,10 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class StudentConnectionHandler extends ConnectionHandler implements Runnable {
 
@@ -27,12 +38,12 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
     private ObservableList<Notification> notifications = FXCollections.observableArrayList();
     private ObservableList<ContactDetails> contactDetails = FXCollections.observableArrayList();
     private ObservableList<ImportantDate> importantDates = FXCollections.observableArrayList();
-    public volatile ObservableList<Object> outputQueue = FXCollections.observableArrayList();
-    public volatile BooleanProperty updateStudent = new SimpleBooleanProperty(false);
-    public volatile BooleanProperty updateNotices = new SimpleBooleanProperty(false);
-    public volatile BooleanProperty updateNotifications = new SimpleBooleanProperty(false);
-    public volatile BooleanProperty updateContactDetails = new SimpleBooleanProperty(false);
-    public volatile BooleanProperty updateImportantDates = new SimpleBooleanProperty(false);
+    private volatile ObservableList<Object> outputQueue = FXCollections.observableArrayList();
+    volatile BooleanProperty updateStudent = new SimpleBooleanProperty(false);
+    private volatile BooleanProperty updateNotices = new SimpleBooleanProperty(false);
+    private volatile BooleanProperty updateNotifications = new SimpleBooleanProperty(false);
+    private volatile BooleanProperty updateContactDetails = new SimpleBooleanProperty(false);
+    private volatile BooleanProperty updateImportantDates = new SimpleBooleanProperty(false);
 
     public StudentConnectionHandler(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream, String studentNumber, ObservableList<ConnectionHandler> connectionsList, DatabaseHandler dh) {
         super(socket, objectInputStream, objectOutputStream, connectionsList, dh);
@@ -50,25 +61,25 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         updateNotices.addListener((obs, oldV, newV) -> {
             if (newV) {
                 updateNotices();
-                updateStudent.set(false);
+                updateNotices.set(false);
             }
         });
         updateNotifications.addListener((obs, oldV, newV) -> {
-            if (newV) {
+            if (updateNotifications.get()) {
                 updateNotifications();
-                updateStudent.set(false);
+                updateNotifications.set(false);
             }
         });
         updateContactDetails.addListener((obs, oldV, newV) -> {
             if (newV) {
                 updateContactDetails();
-                updateStudent.set(false);
+                updateContactDetails.set(false);
             }
         });
         updateImportantDates.addListener((obs, oldV, newV) -> {
             if (newV) {
                 updateImportantDates();
-                updateStudent.set(false);
+                updateImportantDates.set(false);
             }
         });
         //TODO no need to add listener to list as updateStudent() already runs when updated ???
@@ -79,7 +90,10 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
             outputQueue.add(0, Arrays.asList(notices.toArray()));
         });
         notifications.addListener((InvalidationListener) e -> {
-            outputQueue.add(0, Arrays.asList(notifications.toArray()));
+            if (!notifications.isEmpty()) {
+                System.out.println("adding notification: " + notifications);
+                outputQueue.add(0, Arrays.asList(notifications.toArray()));
+            }
         });
         contactDetails.addListener((InvalidationListener) e -> {
             outputQueue.add(0, Arrays.asList(contactDetails.toArray()));
@@ -101,7 +115,7 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
             while (running.get()) {
                 Object input;
                 if ((input = getReply()) != null) {
-                    if(input instanceof String) {
+                    if (input instanceof String) {
                         String text = input.toString();
                         if (text.startsWith("lo:")) {
                             dh.log("Student " + studentNumber + "> Requested ClassLecturer Online");
@@ -122,14 +136,14 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                         } else if (text.startsWith("gf:")) {
                             dh.log("Student " + studentNumber + "> Requested File: " + text.substring(3).split(":")[1] + " From class: " + text.substring(3).split(":")[0]);
                             getFile(text.substring(3).split(":")[0], text.substring(3).split(":")[1]);
+                        } else if (text.startsWith("gff:")) {
+                            dh.log("Student " + studentNumber + "> Requested File: " + text.substring(3).split(":")[1] + " From class: " + text.substring(3).split(":")[0]);
+                            outputQueue.add(0, getOnlineDownload(Integer.parseInt(text.substring(3).split(":")[0]), text.substring(3).split(":")[1]));
                         } else if (text.startsWith("idp:")) {
                             isDefaultPassword();
-                        } else if (text.startsWith("lgt:")) {
-                            terminateConnection();
                         } else if (text.startsWith("dn:")) {
                             dh.log("Student " + studentNumber + "> Dismissed Notification");
                             dh.removeNotification(Integer.parseInt(text.substring(3)));
-                            updateNotifications();
                         } else {
                             dh.log("Student " + studentNumber + "> Requested Unknown Command: " + input);
                             System.out.println("Server> Unknown command: " + input);
@@ -146,10 +160,13 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
                 try {
                     if (!outputQueue.isEmpty()) {
                         Object out = outputQueue.get(0);
-                        sendData(out);
-                        dh.log("Student " + studentNumber + "> OutputProcessor> Sent: " + outputQueue.get(0));
-                        System.out.println("Server> OutputProcessor> Sent: " + out);
-                        outputQueue.remove(out);
+                        if (out instanceof List && (((List) out).isEmpty() || ((List) out).get(0) == null)) {
+                            outputQueue.remove(out);
+                        } else {
+                            sendData(out);
+                            dh.log("Student " + studentNumber + "> OutputProcessor> Sent: " + out + " (" + out.getClass().toString() + ")");
+                            outputQueue.remove(out);
+                        }
                     }
                     Thread.sleep(20);
                 } catch (Exception ex) {
@@ -241,11 +258,11 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
         }
     }
 
-    public Student getStudent(){
+    public Student getStudent() {
         return student.getValue();
     }
 
-    public String getQualification (){
+    public String getQualification() {
         return student.getValue().getQualification();
     }
 
@@ -275,6 +292,19 @@ public class StudentConnectionHandler extends ConnectionHandler implements Runna
 
     public String getStudentNumber() {
         return studentNumber;
+    }
+
+    public OnlineDownload getOnlineDownload(int classId, String fileName) {
+        try {
+            DbxRequestConfig reqConfig = new DbxRequestConfig("javarootsDropbox/1.0", Locale.getDefault().toString());
+            String accessToken = "hU-YDhhEj8AAAAAAAAAASPYEYk01yvrEBZI95MDCN9oozxtJItePEFEKln71YSIl";
+            DbxClientV2 client = new DbxClientV2(reqConfig, accessToken);
+            SharedLinkMetadata slm = client.sharing().createSharedLinkWithSettings("/1/ITII320 – Assignment – Specification (V1.0).pdf", SharedLinkSettings.newBuilder().withRequestedVisibility(RequestedVisibility.PUBLIC).build());
+            return new OnlineDownload(classId, fileName, slm.getUrl());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return new OnlineDownload(classId, fileName, "Not available");
     }
 
 }

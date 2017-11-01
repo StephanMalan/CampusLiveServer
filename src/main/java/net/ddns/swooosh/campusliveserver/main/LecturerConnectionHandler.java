@@ -58,19 +58,19 @@ public class LecturerConnectionHandler extends ConnectionHandler implements Runn
         updateNotices.addListener((obs, oldV, newV) -> {
             if (newV) {
                 updateNotices();
-                updateLecturer.set(false);
+                updateNotices.set(false);
             }
         });
         updateContactDetails.addListener((obs, oldV, newV) -> {
             if (newV) {
                 updateContactDetails();
-                updateLecturer.set(false);
+                updateContactDetails.set(false);
             }
         });
         updateImportantDates.addListener((obs, oldV, newV) -> {
             if (newV) {
                 updateImportantDates();
-                updateLecturer.set(false);
+                updateImportantDates.set(false);
             }
         });
         updateStudentAttendance.addListener((obs, oldV, newV) -> {

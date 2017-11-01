@@ -41,7 +41,6 @@ public class ConnectionHandler {
         try {
             Object input = null;
             while (running.get() && (input = objectInputStream.readObject()) == null) ;
-            System.out.println(running.get() + "wtf " + input);
             return input;
         } catch (Exception ex) {
             terminateConnection();
